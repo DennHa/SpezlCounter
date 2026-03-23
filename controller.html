@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Controller</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-dark:         #11233D;
+            --color-light:        #FAF1D9;
+            --color-red-light:    #FF7D6A;
+            --color-red-dark:     #AD230F;
+            --color-yellow-dark:  #C88F00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: var(--color-dark);
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        /* Name Entry Modal */
+        .name-entry-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--color-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 48px;
+            z-index: 1000;
+        }
+
+        .name-entry-modal.hidden {
+            display: none;
+        }
+
+        .name-entry-title {
+            font-size: 48px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        .name-inputs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            width: 100%;
+            max-width: 800px;
+            padding: 0 40px;
+        }
+
+        .name-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .name-input-label {
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+        }
+
+        .name-input-field {
+            width: 100%;
+            max-width: 300px;
+            padding: 16px 20px;
+            background: transparent;
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.05em;
+            outline: none;
+            transition: opacity 0.3s;
+            border: none;
+            border-bottom: 3px solid var(--color-light);
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .name-input-field:focus {
+            opacity: 1;
+        }
+
+        .name-input-field::placeholder {
+            color: var(--color-light);
+            opacity: 0.4;
+        }
+
+        .name-entry-start-btn {
+            padding: 16px 48px;
+            background: var(--color-light);
+            color: var(--color-dark);
+            border: none;
+            font-family: 'Lora', serif;
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 32px;
+        }
+
+        .name-entry-start-btn:active {
+            transform: scale(0.98);
+            opacity: 0.8;
+        }
+
+        /* Main Game UI */
+        .game-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            width: 100%;
+            height: 100%;
+            gap: 0;
+        }
+
+        .game-container.hidden {
+            display: none;
+        }
+
+        .player-zone {
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .player-zone.p1 {
+            background: #11233D;
+            color: #FAF1D9;
+            transform: rotate(90deg);
+            transform-origin: center;
+        }
+
+        .player-zone.p2 {
+            background: #FAF1D9;
+            color: #11233D;
+            transform: rotate(-90deg);
+            transform-origin: center;
+        }
+
+        .player-zone-header {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            margin-bottom: 12px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        .life-display-large {
+            font-size: 160px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 16px;
+            letter-spacing: -0.05em;
+        }
+
+        .mana-symbol {
+            font-size: 32px;
+            opacity: 0.8;
+        }
+
+        .control-strip {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .control-button {
+            flex: 1;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.1);
+            border: none;
+            font-size: 40px;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-button:active {
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .delta-display {
+            font-size: 48px;
+            font-weight: 700;
+            text-align: center;
+            opacity: 0;
+            pointer-events: none;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            letter-spacing: -0.05em;
+            animation: deltaFade 0.4s ease forwards;
+        }
+
+        @keyframes deltaFade {
+            0% { opacity: 0; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .delta-display:not(.show) {
+            animation: deltaFadeOut 0.4s ease forwards;
+        }
+
+        @keyframes deltaFadeOut {
+            0% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.8); }
+        }
+
+        .delta-display.positive {
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        .delta-display.negative {
+            color: rgba(255, 107, 157, 0.8);
+        }
+
+        .player-zone.p1 .delta-display.positive {
+            color: rgba(250, 241, 217, 0.6);
+        }
+
+        .player-zone.p1 .delta-display.negative {
+            color: rgba(250, 241, 217, 0.8);
+        }
+
+        .player-zone.p2 .delta-display.positive {
+            color: rgba(17, 35, 61, 0.6);
+        }
+
+        .player-zone.p2 .delta-display.negative {
+            color: rgba(17, 35, 61, 0.8);
+        }
+
+        .player-zone.p1 .control-button {
+            background: rgba(250, 241, 217, 0.15);
+            color: #FAF1D9;
+        }
+
+        .player-zone.p2 .control-button {
+            background: rgba(17, 35, 61, 0.15);
+            color: #11233D;
+        }
+
+        .delta-display.show {
+            opacity: 1;
+        }
+
+        .reset-button {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #AD230F;
+            border: none;
+            color: var(--color-light);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            padding: 8px 16px;
+            transition: all 0.2s;
+            z-index: 1001;
+        }
+
+        .reset-button:active {
+            transform: translateX(-50%) scale(0.95);
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Name Entry Modal -->
+    <div class="name-entry-modal" id="name-entry-modal">
+        <div class="name-entry-title">Enter Player Names</div>
+        <div class="name-inputs-grid">
+            <div class="name-input-group">
+                <div class="name-input-label">Player 1</div>
+                <input type="text" class="name-input-field" id="name-p1" inputmode="text" placeholder="Name...">
+            </div>
+            <div class="name-input-group">
+                <div class="name-input-label">Player 2</div>
+                <input type="text" class="name-input-field" id="name-p2" inputmode="text" placeholder="Name...">
+            </div>
+        </div>
+        <button class="name-entry-start-btn" id="start-game-btn">START</button>
+    </div>
+
+    <!-- Game UI -->
+    <div class="game-container hidden" id="game-container">
+        <button class="reset-button" id="reset-btn">↻ RESET</button>
+
+        <!-- Player 1 (Left, Pink) -->
+        <div class="player-zone p1">
+            <div class="player-zone-header" id="display-p1-name">Spieler 1</div>
+            <div class="life-display-large" id="display-p1-life">20</div>
+            <div class="mana-symbol">♠</div>
+            <div class="delta-display" id="delta-p1-display"></div>
+            <div class="control-strip">
+                <button class="control-button" data-player="p1" data-delta="+1">+</button>
+                <button class="control-button" data-player="p1" data-delta="-1">−</button>
+            </div>
+        </div>
+
+        <!-- Player 2 (Right, White) -->
+        <div class="player-zone p2">
+            <div class="player-zone-header" id="display-p2-name">Spieler 2</div>
+            <div class="life-display-large" id="display-p2-life">20</div>
+            <div class="mana-symbol">♥</div>
+            <div class="delta-display" id="delta-p2-display"></div>
+            <div class="control-strip">
+                <button class="control-button" data-player="p2" data-delta="+1">+</button>
+                <button class="control-button" data-player="p2" data-delta="-1">−</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration — replace with your Firebase project URL
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+
+        let currentState = {
+            p1: { name: 'Spieler 1', life: 20 },
+            p2: { name: 'Spieler 2', life: 20 }
+        };
+
+        let deltaAccumulated = { p1: 0, p2: 0 };
+        let deltaTimeouts = { p1: null, p2: null };
+
+        // Update DOM
+        function updateUI() {
+            for (const player of ['p1', 'p2']) {
+                const lifeEl = document.getElementById('display-' + player + '-life');
+                lifeEl.textContent = currentState[player].life;
+                document.getElementById('display-' + player + '-name').textContent = currentState[player].name;
+            }
+        }
+
+        // Show/update accumulated delta and reset after 5 seconds of no clicks
+        function updateDeltaDisplay(player) {
+            const deltaEl = document.getElementById('delta-' + player + '-display');
+            const accumulated = deltaAccumulated[player];
+
+            if (accumulated === 0) {
+                deltaEl.textContent = '';
+                deltaEl.classList.remove('show', 'positive', 'negative');
+            } else {
+                const sign = accumulated > 0 ? '+' : '';
+                deltaEl.textContent = sign + accumulated;
+                deltaEl.classList.remove('positive', 'negative');
+                deltaEl.classList.add(accumulated > 0 ? 'positive' : 'negative', 'show');
+            }
+
+            // Clear previous timeout
+            if (deltaTimeouts[player]) {
+                clearTimeout(deltaTimeouts[player]);
+            }
+
+            // Reset delta after 5 seconds of no clicks
+            deltaTimeouts[player] = setTimeout(() => {
+                deltaAccumulated[player] = 0;
+                updateDeltaDisplay(player);
+            }, 5000);
+        }
+
+        // Write to Firebase
+        async function writeToFirebase(patch) {
+            try {
+                const response = await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patch)
+                });
+                if (!response.ok) throw new Error('Firebase write failed');
+            } catch (error) {
+                console.error('Firebase write error:', error);
+            }
+        }
+
+        // Handle name entry
+        document.getElementById('start-game-btn').addEventListener('click', () => {
+            const p1Name = document.getElementById('name-p1').value.trim() || 'Spieler 1';
+            const p2Name = document.getElementById('name-p2').value.trim() || 'Spieler 2';
+
+            currentState.p1.name = p1Name;
+            currentState.p2.name = p2Name;
+
+            // Hide modal, show game
+            document.getElementById('name-entry-modal').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+
+            updateUI();
+            updateDeltaDisplay('p1');
+            updateDeltaDisplay('p2');
+
+            // Write to Firebase
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2
+            });
+        });
+
+        // Allow Enter key in name inputs
+        document.querySelectorAll('.name-input-field').forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('start-game-btn').click();
+                }
+            });
+        });
+
+        // Handle reset button
+        document.getElementById('reset-btn').addEventListener('click', () => {
+            // Reset state
+            currentState.p1.life = 20;
+            currentState.p2.life = 20;
+            deltaAccumulated.p1 = 0;
+            deltaAccumulated.p2 = 0;
+
+            // Clear timeouts
+            clearTimeout(deltaTimeouts.p1);
+            clearTimeout(deltaTimeouts.p2);
+
+            // Clear name inputs
+            document.getElementById('name-p1').value = '';
+            document.getElementById('name-p2').value = '';
+
+            // Hide game, show modal
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('name-entry-modal').classList.remove('hidden');
+
+            // Focus first name input
+            document.getElementById('name-p1').focus();
+        });
+
+        // Handle life adjustment buttons
+        document.querySelectorAll('.control-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const player = btn.dataset.player;
+                const delta = parseInt(btn.dataset.delta);
+                
+                // Update life
+                currentState[player].life = Math.max(0, currentState[player].life + delta);
+                
+                // Accumulate delta for display
+                deltaAccumulated[player] += delta;
+                updateDeltaDisplay(player);
+                
+                // Update UI and Firebase
+                updateUI();
+                writeToFirebase({ [player]: currentState[player] });
+            });
+        });
+
+        // Focus first name input
+        document.getElementById('name-p1').focus();
+    </script>
+</body>
+</html>

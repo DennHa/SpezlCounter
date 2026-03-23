@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        /* Pauper Spezl Design System */
+        :root {
+            --color-dark:         #11233D;
+            --color-light:        #FAF1D9;
+            --color-blue-dark:    #1F82C0;
+            --color-blue-light:   #5AC0FF;
+            --color-green-dark:   #30710B;
+            --color-green-light:  #97D375;
+            --color-purple-dark:  #38209A;
+            --color-purple-light: #8E7DD4;
+            --color-red-dark:     #AD230F;
+            --color-red-light:    #FF7D6A;
+            --color-yellow-dark:  #C88F00;
+            --color-yellow-light: #FFDF5E;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Lora', serif;
+            font-weight: 400;
+            color: var(--color-light);
+            width: 100vw;
+            height: 160px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .overlay-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            align-items: center;
+            justify-content: space-between;
+            gap: 40px;
+        }
+
+        /* Player Card */
+        .player-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            flex: 1;
+            height: 100%;
+            max-width: 280px;
+        }
+
+        .player-card.p1 {
+            align-items: flex-start;
+            padding-left: 16px;
+        }
+
+        .player-card.p2 {
+            align-items: flex-end;
+            padding-right: 16px;
+        }
+
+        .player-name {
+            font-family: 'Lora', serif;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            opacity: 0.8;
+            min-height: 16px;
+        }
+
+        .life-total {
+            font-size: 96px;
+            font-weight: 600;
+            line-height: 1;
+            transition: color 0.3s ease;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        /* Life state colors */
+        .life-total.state-danger {
+            color: var(--color-red-light);
+            animation: pulse-danger 1s infinite;
+        }
+
+        .life-total.state-critical {
+            color: var(--color-red-dark);
+        }
+
+        .life-total.state-warning {
+            color: var(--color-yellow-dark);
+        }
+
+        .life-total.state-normal {
+            color: var(--color-light);
+        }
+
+        @keyframes pulse-danger {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        /* Center divider */
+        .divider {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            opacity: 0.5;
+        }
+
+        .divider-icon {
+            font-size: 48px;
+            line-height: 1;
+        }
+
+        /* Delta animation (floating +/- numbers) */
+        .delta {
+            position: fixed;
+            font-size: 28px;
+            font-weight: 600;
+            font-family: 'Lora', serif;
+            pointer-events: none;
+            z-index: 100;
+            animation: float-up 1s ease-out forwards;
+        }
+
+        .delta.positive {
+            color: var(--color-green-light);
+        }
+
+        .delta.negative {
+            color: var(--color-red-light);
+        }
+
+        @keyframes float-up {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px);
+            }
+        }
+
+        /* Connection indicator */
+        .connection-status {
+            position: fixed;
+            bottom: 8px;
+            right: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-green-light);
+            box-shadow: 0 0 8px var(--color-green-light);
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .connection-status.offline {
+            background: var(--color-red-light);
+            box-shadow: 0 0 8px var(--color-red-light);
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div class="player-card p1">
+            <div class="player-name" id="p1-name">Spieler 1</div>
+            <div class="life-total state-normal" id="p1-life">20</div>
+        </div>
+
+        <div class="divider">
+            <div class="divider-icon">⚔</div>
+        </div>
+
+        <div class="player-card p2">
+            <div class="player-name" id="p2-name">Spieler 2</div>
+            <div class="life-total state-normal" id="p2-life">20</div>
+        </div>
+    </div>
+
+    <div class="connection-status" id="connection-status"></div>
+
+    <script>
+        // Configuration — replace with your Firebase project URL
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+        
+        let lastP1Life = 20;
+        let lastP2Life = 20;
+
+        // Helper: convert old data to new structure if needed
+        function normalizeData(data) {
+            if (!data) return null;
+            if (data.p1 && data.p1.name !== undefined) {
+                return data;
+            }
+            return null;
+        }
+
+        // Helper: determine life total color state
+        function getLifeState(life) {
+            if (life <= 0) return 'state-critical';
+            if (life <= 5) return 'state-danger';
+            if (life <= 10) return 'state-warning';
+            return 'state-normal';
+        }
+
+        // Update DOM with new life total and animate delta
+        function updateLife(player, newLife) {
+            const id = player === 'p1' ? '#p1-life' : '#p2-life';
+            const oldLife = player === 'p1' ? lastP1Life : lastP2Life;
+            const element = document.querySelector(id);
+            
+            element.textContent = newLife;
+            element.className = 'life-total ' + getLifeState(newLife);
+
+            // Show delta animation if changed
+            if (oldLife !== newLife) {
+                const delta = newLife - oldLife;
+                const sign = delta > 0 ? '+' : '';
+                showDelta(player, sign + delta, element);
+            }
+
+            if (player === 'p1') {
+                lastP1Life = newLife;
+            } else {
+                lastP2Life = newLife;
+            }
+        }
+
+        // Display floating delta number
+        function showDelta(player, text, sourceElement) {
+            const deltaEl = document.createElement('div');
+            deltaEl.className = 'delta ' + (text.startsWith('+') ? 'positive' : 'negative');
+            deltaEl.textContent = text;
+            deltaEl.style.left = sourceElement.getBoundingClientRect().left + 'px';
+            deltaEl.style.top = sourceElement.getBoundingClientRect().top + 'px';
+            document.body.appendChild(deltaEl);
+
+            setTimeout(() => deltaEl.remove(), 1000);
+        }
+
+        // Update name in DOM
+        function updateName(player, name) {
+            const id = player === 'p1' ? '#p1-name' : '#p2-name';
+            document.querySelector(id).textContent = name || 'Spieler ' + (player === 'p1' ? '1' : '2');
+        }
+
+        // Set connection status indicator
+        function setConnectionStatus(online) {
+            const indicator = document.getElementById('connection-status');
+            if (online) {
+                indicator.classList.remove('offline');
+            } else {
+                indicator.classList.add('offline');
+            }
+        }
+
+        // Poll Firebase Realtime Database
+        async function poll() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Firebase fetch failed');
+                
+                const data = await response.json();
+                const normalized = normalizeData(data);
+                
+                if (normalized && normalized.p1 && normalized.p2) {
+                    updateName('p1', normalized.p1.name);
+                    updateName('p2', normalized.p2.name);
+                    updateLife('p1', normalized.p1.life);
+                    updateLife('p2', normalized.p2.life);
+                    setConnectionStatus(true);
+                }
+            } catch (error) {
+                console.error('Poll error:', error);
+                setConnectionStatus(false);
+            }
+        }
+
+        // Start polling
+        poll();
+        setInterval(poll, 500);
+    </script>
+</body>
+</html>
