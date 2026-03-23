@@ -294,9 +294,31 @@
             opacity: 1;
         }
 
-        .reset-button {
+        .reset-life-button {
             position: fixed;
             top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #5AC0FF;
+            border: none;
+            color: var(--color-dark);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            padding: 8px 16px;
+            transition: all 0.2s;
+            z-index: 1001;
+        }
+
+        .reset-life-button:active {
+            transform: translateX(-50%) scale(0.95);
+            opacity: 0.8;
+        }
+
+        .end-game-button {
+            position: fixed;
+            bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             background: #AD230F;
@@ -311,7 +333,7 @@
             z-index: 1001;
         }
 
-        .reset-button:active {
+        .end-game-button:active {
             transform: translateX(-50%) scale(0.95);
             opacity: 0.8;
         }
@@ -339,7 +361,8 @@
 
     <!-- Game UI -->
     <div class="game-container hidden" id="game-container">
-        <button class="reset-button" id="reset-btn">↻ RESET</button>
+        <button class="reset-life-button" id="reset-life-btn">RESET LIFE</button>
+        <button class="end-game-button" id="end-game-btn">END GAME</button>
 
         <!-- Player 1 (Left, Pink) -->
         <div class="player-zone p1">
@@ -480,8 +503,31 @@
             });
         });
 
-        // Handle reset button
-        document.getElementById('reset-btn').addEventListener('click', () => {
+        // Handle reset life button (resets life totals but stays in game)
+        document.getElementById('reset-life-btn').addEventListener('click', () => {
+            // Reset life only
+            currentState.p1.life = 20;
+            currentState.p2.life = 20;
+            deltaAccumulated.p1 = 0;
+            deltaAccumulated.p2 = 0;
+
+            // Clear timeouts
+            clearTimeout(deltaTimeouts.p1);
+            clearTimeout(deltaTimeouts.p2);
+
+            updateUI();
+            updateDeltaDisplay('p1');
+            updateDeltaDisplay('p2');
+
+            // Write to Firebase
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2
+            });
+        });
+
+        // Handle end game button (return to name entry modal)
+        document.getElementById('end-game-btn').addEventListener('click', () => {
             // Reset state
             currentState.p1.life = 20;
             currentState.p2.life = 20;
