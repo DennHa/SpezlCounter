@@ -109,10 +109,15 @@
             opacity: 0.4;
         }
 
-        .name-entry-start-btn {
+        .name-entry-buttons {
+            display: flex;
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .name-entry-start-btn,
+        .name-entry-skip-btn {
             padding: 16px 48px;
-            background: var(--color-light);
-            color: var(--color-dark);
             border: none;
             font-family: 'Lora', serif;
             font-size: 24px;
@@ -120,10 +125,21 @@
             letter-spacing: 0.1em;
             cursor: pointer;
             transition: all 0.2s;
-            margin-top: 32px;
         }
 
-        .name-entry-start-btn:active {
+        .name-entry-start-btn {
+            background: var(--color-light);
+            color: var(--color-dark);
+        }
+
+        .name-entry-skip-btn {
+            background: transparent;
+            color: var(--color-light);
+            border: 2px solid var(--color-light);
+        }
+
+        .name-entry-start-btn:active,
+        .name-entry-skip-btn:active {
             transform: scale(0.98);
             opacity: 0.8;
         }
@@ -315,7 +331,10 @@
                 <input type="text" class="name-input-field" id="name-p2" inputmode="text" placeholder="Name...">
             </div>
         </div>
-        <button class="name-entry-start-btn" id="start-game-btn">START</button>
+        <div class="name-entry-buttons">
+            <button class="name-entry-start-btn" id="start-game-btn">START</button>
+            <button class="name-entry-skip-btn" id="skip-game-btn">SKIP</button>
+        </div>
     </div>
 
     <!-- Game UI -->
@@ -416,6 +435,26 @@
 
             currentState.p1.name = p1Name;
             currentState.p2.name = p2Name;
+
+            // Hide modal, show game
+            document.getElementById('name-entry-modal').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+
+            updateUI();
+            updateDeltaDisplay('p1');
+            updateDeltaDisplay('p2');
+
+            // Write to Firebase
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2
+            });
+        });
+
+        // Handle skip button (start with default names)
+        document.getElementById('skip-game-btn').addEventListener('click', () => {
+            currentState.p1.name = 'Spieler 1';
+            currentState.p2.name = 'Spieler 2';
 
             // Hide modal, show game
             document.getElementById('name-entry-modal').classList.add('hidden');
