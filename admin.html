@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Admin Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-dark:         #11233D;
+            --color-light:        #FAF1D9;
+            --color-blue:         #5AC0FF;
+            --color-red:          #AD230F;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--color-dark);
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .panel {
+            background: rgba(250, 241, 217, 0.05);
+            border: 2px solid var(--color-blue);
+            padding: 40px;
+            border-radius: 8px;
+        }
+
+        .title {
+            font-size: 32px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 40px;
+            letter-spacing: 0.05em;
+        }
+
+        .login-screen.hidden,
+        .admin-screen.hidden {
+            display: none;
+        }
+
+        /* Login Screen */
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+        }
+
+        .form-input {
+            padding: 12px 16px;
+            background: rgba(250, 241, 217, 0.1);
+            border: 1px solid var(--color-blue);
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 16px;
+            border-radius: 4px;
+        }
+
+        .form-input:focus {
+            outline: none;
+            background: rgba(250, 241, 217, 0.15);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            font-family: 'Lora', serif;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--color-blue);
+            color: var(--color-dark);
+        }
+
+        .btn-danger {
+            background: var(--color-red);
+            color: var(--color-light);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-light);
+            border: 2px solid var(--color-light);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        /* Admin Screen */
+        .admin-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 40px;
+        }
+
+        .player-box {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .player-name {
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(250, 241, 217, 0.05);
+            border-radius: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .game-wins-control {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .game-wins-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid var(--color-light);
+            background: transparent;
+            color: var(--color-light);
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .game-wins-btn:active {
+            background: var(--color-light);
+            color: var(--color-dark);
+        }
+
+        .game-wins-value {
+            width: 40px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .error {
+            color: var(--color-red);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            color: var(--color-blue);
+            font-size: 14px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 12px;
+            flex-direction: column;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div class="panel login-screen" id="login-screen">
+            <div class="title">Admin Panel</div>
+            <div class="error" id="login-error"></div>
+            <form class="login-form" id="login-form">
+                <div class="form-group">
+                    <label class="form-label">PASSWORD</label>
+                    <input type="password" class="form-input" id="password-input" placeholder="Enter admin password">
+                </div>
+                <button type="submit" class="btn btn-primary">LOGIN</button>
+            </form>
+        </div>
+
+        <!-- Admin Screen -->
+        <div class="panel admin-screen hidden" id="admin-screen">
+            <div class="title">Game Management</div>
+            <div class="error" id="firebase-error"></div>
+            <div class="success" id="save-success"></div>
+
+            <div class="admin-grid">
+                <!-- Player 1 -->
+                <div class="player-box">
+                    <div class="player-name" id="admin-p1-name">Player 1</div>
+                    <div class="stat-row">
+                        <div class="stat-label">Games Won</div>
+                        <div class="game-wins-control">
+                            <button class="game-wins-btn" id="p1-minus">−</button>
+                            <div class="game-wins-value" id="p1-wins">0</div>
+                            <button class="game-wins-btn" id="p1-plus">+</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Player 2 -->
+                <div class="player-box">
+                    <div class="player-name" id="admin-p2-name">Player 2</div>
+                    <div class="stat-row">
+                        <div class="stat-label">Games Won</div>
+                        <div class="game-wins-control">
+                            <button class="game-wins-btn" id="p2-minus">−</button>
+                            <div class="game-wins-value" id="p2-wins">0</div>
+                            <button class="game-wins-btn" id="p2-plus">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button class="btn btn-primary" id="save-btn">SAVE CHANGES</button>
+                <button class="btn btn-danger" id="reset-series-btn">RESET SERIES</button>
+                <button class="btn btn-secondary" id="logout-btn">LOGOUT</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+        const ADMIN_PASSWORD = 'spezlpauper'; // Change this to your desired password
+
+        let currentGameState = null;
+
+        // Login form handler
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('password-input').value;
+            const errorEl = document.getElementById('login-error');
+
+            if (password === ADMIN_PASSWORD) {
+                errorEl.textContent = '';
+                await loadGameState();
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('admin-screen').classList.remove('hidden');
+            } else {
+                errorEl.textContent = 'Invalid password';
+            }
+        });
+
+        // Load current game state from Firebase
+        async function loadGameState() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load game state');
+                
+                const data = await response.json();
+                currentGameState = data.match || {
+                    p1: { name: 'Spieler 1', life: 20, gamesWon: 0 },
+                    p2: { name: 'Spieler 2', life: 20, gamesWon: 0 }
+                };
+
+                updateAdminUI();
+            } catch (error) {
+                console.error('Load error:', error);
+                document.getElementById('firebase-error').textContent = 'Failed to load game state';
+            }
+        }
+
+        // Update admin UI with current state
+        function updateAdminUI() {
+            document.getElementById('admin-p1-name').textContent = currentGameState.p1.name || 'Player 1';
+            document.getElementById('admin-p2-name').textContent = currentGameState.p2.name || 'Player 2';
+            document.getElementById('p1-wins').textContent = currentGameState.p1.gamesWon || 0;
+            document.getElementById('p2-wins').textContent = currentGameState.p2.gamesWon || 0;
+        }
+
+        // Player 1 controls
+        document.getElementById('p1-plus').addEventListener('click', () => {
+            currentGameState.p1.gamesWon = Math.min(2, (currentGameState.p1.gamesWon || 0) + 1);
+            updateAdminUI();
+        });
+
+        document.getElementById('p1-minus').addEventListener('click', () => {
+            currentGameState.p1.gamesWon = Math.max(0, (currentGameState.p1.gamesWon || 0) - 1);
+            updateAdminUI();
+        });
+
+        // Player 2 controls
+        document.getElementById('p2-plus').addEventListener('click', () => {
+            currentGameState.p2.gamesWon = Math.min(2, (currentGameState.p2.gamesWon || 0) + 1);
+            updateAdminUI();
+        });
+
+        document.getElementById('p2-minus').addEventListener('click', () => {
+            currentGameState.p2.gamesWon = Math.max(0, (currentGameState.p2.gamesWon || 0) - 1);
+            updateAdminUI();
+        });
+
+        // Save changes to Firebase
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            try {
+                const response = await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ match: currentGameState })
+                });
+                if (!response.ok) throw new Error('Failed to save');
+                
+                const successEl = document.getElementById('save-success');
+                successEl.textContent = 'Changes saved successfully';
+                setTimeout(() => { successEl.textContent = ''; }, 3000);
+            } catch (error) {
+                document.getElementById('firebase-error').textContent = 'Failed to save changes';
+            }
+        });
+
+        // Reset entire series
+        document.getElementById('reset-series-btn').addEventListener('click', async () => {
+            if (!confirm('Are you sure you want to reset the entire series?')) return;
+
+            currentGameState.p1.gamesWon = 0;
+            currentGameState.p2.gamesWon = 0;
+            currentGameState.p1.life = 20;
+            currentGameState.p2.life = 20;
+
+            try {
+                const response = await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ match: currentGameState })
+                });
+                if (!response.ok) throw new Error('Failed to reset');
+                
+                const successEl = document.getElementById('save-success');
+                successEl.textContent = 'Series reset successfully';
+                updateAdminUI();
+                setTimeout(() => { successEl.textContent = ''; }, 3000);
+            } catch (error) {
+                document.getElementById('firebase-error').textContent = 'Failed to reset series';
+            }
+        });
+
+        // Logout
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            document.getElementById('admin-screen').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('password-input').value = '';
+            document.getElementById('login-error').textContent = '';
+            currentGameState = null;
+        });
+    </script>
+</body>
+</html>

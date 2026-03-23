@@ -337,6 +337,113 @@
             transform: translateX(-50%) scale(0.95);
             opacity: 0.8;
         }
+
+        /* Game dots display */
+        .game-dots {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 8px;
+            font-size: 20px;
+        }
+
+        .game-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.5;
+        }
+
+        .game-dot.won {
+            opacity: 1;
+        }
+
+        /* Confirmation Modal */
+        .confirmation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(17, 35, 61, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 48px;
+            z-index: 2000;
+        }
+
+        .confirmation-modal.hidden {
+            display: none;
+        }
+
+        .confirmation-title {
+            font-size: 32px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.05em;
+            color: var(--color-light);
+        }
+
+        .confirmation-options {
+            display: flex;
+            gap: 32px;
+            align-items: center;
+        }
+
+        .confirm-btn, .cancel-btn {
+            padding: 16px 40px;
+            border: none;
+            font-family: 'Lora', serif;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .confirm-btn {
+            background: var(--color-light);
+            color: var(--color-dark);
+        }
+
+        .cancel-btn {
+            background: transparent;
+            color: var(--color-light);
+            border: 2px solid var(--color-light);
+        }
+
+        .confirm-btn:active,
+        .cancel-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        .winner-selector {
+            display: flex;
+            gap: 24px;
+        }
+
+        .winner-btn {
+            padding: 16px 32px;
+            border: 2px solid var(--color-light);
+            background: transparent;
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .winner-btn:active {
+            transform: scale(0.95);
+            background: var(--color-light);
+            color: var(--color-dark);
+        }
     </style>
 </head>
 <body>
@@ -361,13 +468,14 @@
 
     <!-- Game UI -->
     <div class="game-container hidden" id="game-container">
-        <button class="reset-life-button" id="reset-life-btn">RESET LIFE</button>
+        <button class="reset-life-button" id="reset-life-btn">NEXT GAME</button>
         <button class="end-game-button" id="end-game-btn">END GAME</button>
 
         <!-- Player 1 (Left, Pink) -->
         <div class="player-zone p1">
             <div class="player-zone-header" id="display-p1-name">Spieler 1</div>
             <div class="life-display-large" id="display-p1-life">20</div>
+            <div class="game-dots" id="p1-dots"></div>
             <div class="mana-symbol">♠</div>
             <div class="delta-display" id="delta-p1-display"></div>
             <div class="control-strip">
@@ -380,6 +488,7 @@
         <div class="player-zone p2">
             <div class="player-zone-header" id="display-p2-name">Spieler 2</div>
             <div class="life-display-large" id="display-p2-life">20</div>
+            <div class="game-dots" id="p2-dots"></div>
             <div class="mana-symbol">♥</div>
             <div class="delta-display" id="delta-p2-display"></div>
             <div class="control-strip">
@@ -389,13 +498,32 @@
         </div>
     </div>
 
+    <!-- Next Game Confirmation Modal -->
+    <div class="confirmation-modal hidden" id="next-game-modal">
+        <div class="confirmation-title">Who won this game?</div>
+        <div class="winner-selector">
+            <button class="winner-btn" id="p1-winner-btn">Player 1</button>
+            <button class="winner-btn" id="p2-winner-btn">Player 2</button>
+        </div>
+        <button class="cancel-btn" id="cancel-next-game-btn">CANCEL</button>
+    </div>
+
+    <!-- End Game Confirmation Modal -->
+    <div class="confirmation-modal hidden" id="end-game-modal">
+        <div class="confirmation-title">End current series?</div>
+        <div class="confirmation-options">
+            <button class="confirm-btn" id="confirm-end-game-btn">CONFIRM</button>
+            <button class="cancel-btn" id="cancel-end-game-btn">CANCEL</button>
+        </div>
+    </div>
+
     <script>
         // Configuration — replace with your Firebase project URL
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
 
         let currentState = {
-            p1: { name: 'Spieler 1', life: 20 },
-            p2: { name: 'Spieler 2', life: 20 }
+            p1: { name: 'Spieler 1', life: 20, gamesWon: 0 },
+            p2: { name: 'Spieler 2', life: 20, gamesWon: 0 }
         };
 
         let deltaAccumulated = { p1: 0, p2: 0 };
@@ -407,6 +535,22 @@
                 const lifeEl = document.getElementById('display-' + player + '-life');
                 lifeEl.textContent = currentState[player].life;
                 document.getElementById('display-' + player + '-name').textContent = currentState[player].name;
+            }
+            updateGameDots();
+        }
+
+        // Display game won dots
+        function updateGameDots() {
+            for (const player of ['p1', 'p2']) {
+                const dotsContainer = document.getElementById(player + '-dots');
+                dotsContainer.innerHTML = '';
+                const gamesWon = currentState[player].gamesWon || 0;
+                // Best of 3: max 2 dots
+                for (let i = 0; i < 2; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'game-dot' + (i < gamesWon ? ' won' : '');
+                    dotsContainer.appendChild(dot);
+                }
             }
         }
 
@@ -458,6 +602,8 @@
 
             currentState.p1.name = p1Name;
             currentState.p2.name = p2Name;
+            currentState.p1.gamesWon = 0;
+            currentState.p2.gamesWon = 0;
 
             // Hide modal, show game
             document.getElementById('name-entry-modal').classList.add('hidden');
@@ -478,6 +624,8 @@
         document.getElementById('skip-game-btn').addEventListener('click', () => {
             currentState.p1.name = 'Spieler 1';
             currentState.p2.name = 'Spieler 2';
+            currentState.p1.gamesWon = 0;
+            currentState.p2.gamesWon = 0;
 
             // Hide modal, show game
             document.getElementById('name-entry-modal').classList.add('hidden');
@@ -503,8 +651,31 @@
             });
         });
 
-        // Handle reset life button (resets life totals but stays in game)
+        // Handle next game button (show winner selection modal)
         document.getElementById('reset-life-btn').addEventListener('click', () => {
+            document.getElementById('next-game-modal').classList.remove('hidden');
+        });
+
+        // Handle player 1 winner button
+        document.getElementById('p1-winner-btn').addEventListener('click', () => {
+            currentState.p1.gamesWon = Math.min(2, (currentState.p1.gamesWon || 0) + 1);
+            proceedToNextGame();
+        });
+
+        // Handle player 2 winner button
+        document.getElementById('p2-winner-btn').addEventListener('click', () => {
+            currentState.p2.gamesWon = Math.min(2, (currentState.p2.gamesWon || 0) + 1);
+            proceedToNextGame();
+        });
+
+        // Cancel next game modal
+        document.getElementById('cancel-next-game-btn').addEventListener('click', () => {
+            document.getElementById('next-game-modal').classList.add('hidden');
+        });
+
+        function proceedToNextGame() {
+            document.getElementById('next-game-modal').classList.add('hidden');
+            
             // Reset life only
             currentState.p1.life = 20;
             currentState.p2.life = 20;
@@ -524,13 +695,20 @@
                 'p1': currentState.p1,
                 'p2': currentState.p2
             });
+        }
+
+        // Handle end game button (show confirmation)
+        document.getElementById('end-game-btn').addEventListener('click', () => {
+            document.getElementById('end-game-modal').classList.remove('hidden');
         });
 
-        // Handle end game button (return to name entry modal)
-        document.getElementById('end-game-btn').addEventListener('click', () => {
+        // Confirm end game
+        document.getElementById('confirm-end-game-btn').addEventListener('click', () => {
+            document.getElementById('end-game-modal').classList.add('hidden');
+            
             // Reset state
-            currentState.p1.life = 20;
-            currentState.p2.life = 20;
+            currentState.p1 = { name: 'Spieler 1', life: 20, gamesWon: 0 };
+            currentState.p2 = { name: 'Spieler 2', life: 20, gamesWon: 0 };
             deltaAccumulated.p1 = 0;
             deltaAccumulated.p2 = 0;
 
@@ -548,6 +726,11 @@
 
             // Focus first name input
             document.getElementById('name-p1').focus();
+        });
+
+        // Cancel end game
+        document.getElementById('cancel-end-game-btn').addEventListener('click', () => {
+            document.getElementById('end-game-modal').classList.add('hidden');
         });
 
         // Handle life adjustment buttons
