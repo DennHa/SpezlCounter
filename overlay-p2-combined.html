@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Overlay - Player 2 Combined</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-light:        #FAF1D9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Lora', serif;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .element {
+            position: fixed;
+            font-weight: 600;
+            color: var(--color-light);
+            letter-spacing: 0.05em;
+        }
+
+        #p2-name {
+            left: 350px;
+            top: 25px;
+            font-size: 65px;
+            min-width: 200px;
+            text-align: center;
+        }
+
+        #p2-life {
+            left: 785px;
+            top: 25px;
+            font-size: 65px;
+            min-width: 120px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        #p2-wins {
+            left: 960px;
+            top: 25px;
+            font-size: 65px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            min-width: 120px;
+            height: 65px;
+        }
+
+        .game-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--color-light);
+            opacity: 0.4;
+            flex-shrink: 0;
+        }
+
+        .game-dot.won {
+            opacity: 1;
+        }
+
+        #p2-deck {
+            left: 1156px;
+            top: 25px;
+            font-size: 65px;
+            min-width: 200px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="element" id="p2-name">Spieler 2</div>
+    <div class="element" id="p2-life">20</div>
+    <div class="element" id="p2-wins"></div>
+    <div class="element" id="p2-deck">Deck</div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+        let lastState = {
+            name: null,
+            life: null,
+            wins: null,
+            deck: null
+        };
+
+        function updateOverlay() {
+            fetch(DB_URL + '?t=' + Date.now())
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.p2) {
+                        const p2 = data.p2;
+                        
+                        // Update name if changed
+                        if (p2.name !== lastState.name) {
+                            lastState.name = p2.name;
+                            document.getElementById('p2-name').textContent = p2.name || 'Spieler 2';
+                        }
+                        
+                        // Update life if changed
+                        if (p2.life !== lastState.life) {
+                            lastState.life = p2.life;
+                            document.getElementById('p2-life').textContent = p2.life || 20;
+                        }
+                        
+                        // Update wins if changed
+                        if (p2.gamesWon !== lastState.wins) {
+                            lastState.wins = p2.gamesWon;
+                            const winsContainer = document.getElementById('p2-wins');
+                            winsContainer.innerHTML = '';
+                            const gamesWon = p2.gamesWon || 0;
+                            for (let i = 0; i < 2; i++) {
+                                const dot = document.createElement('div');
+                                dot.className = 'game-dot' + (i < gamesWon ? ' won' : '');
+                                winsContainer.appendChild(dot);
+                            }
+                        }
+                        
+                        // Update deck if changed
+                        if (p2.deck !== lastState.deck) {
+                            lastState.deck = p2.deck;
+                            document.getElementById('p2-deck').textContent = p2.deck || 'Deck';
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Poll error:', error);
+                });
+        }
+
+        updateOverlay();
+        setInterval(updateOverlay, 500);
+    </script>
+</body>
+</html>
