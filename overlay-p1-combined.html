@@ -38,6 +38,10 @@
             font-size: 65px;
             min-width: 200px;
             text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 250px;
         }
 
         #p1-life {
@@ -108,7 +112,8 @@
                         // Update name if changed
                         if (p1.name !== lastState.name) {
                             lastState.name = p1.name;
-                            document.getElementById('p1-name').textContent = p1.name || 'Spieler 1';
+                            const displayName = (p1.name || 'Spieler 1').substring(0, 8);
+                            document.getElementById('p1-name').textContent = displayName;
                         }
                         
                         // Update life if changed
