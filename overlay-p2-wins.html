@@ -59,23 +59,6 @@
         .game-dot.won {
             opacity: 1;
         }
-
-        .connection-status {
-            position: fixed;
-            bottom: 8px;
-            right: 8px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #97D375;
-            box-shadow: 0 0 8px #97D375;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        .connection-status.offline {
-            background: #FF7D6A;
-            box-shadow: 0 0 8px #FF7D6A;
-        }
     </style>
 </head>
 <body>
@@ -83,41 +66,33 @@
         <div class="game-dots-label">Series:</div>
         <div class="game-dots-container" id="p2-dots"></div>
     </div>
-    <div class="connection-status" id="connection-status"></div>
 
     <script>
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+        let lastP2Wins = null;
 
         function updateGameDots() {
-            const dotsContainer = document.getElementById('p2-dots');
-            dotsContainer.innerHTML = '';
-            
             fetch(DB_URL + '?t=' + Date.now())
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.p2) {
                         const gamesWon = data.p2.gamesWon || 0;
-                        for (let i = 0; i < 2; i++) {
-                            const dot = document.createElement('div');
-                            dot.className = 'game-dot' + (i < gamesWon ? ' won' : '');
-                            dotsContainer.appendChild(dot);
+                        // Only update DOM if value changed
+                        if (gamesWon !== lastP2Wins) {
+                            lastP2Wins = gamesWon;
+                            const dotsContainer = document.getElementById('p2-dots');
+                            dotsContainer.innerHTML = '';
+                            for (let i = 0; i < 2; i++) {
+                                const dot = document.createElement('div');
+                                dot.className = 'game-dot' + (i < gamesWon ? ' won' : '');
+                                dotsContainer.appendChild(dot);
+                            }
                         }
-                        setConnectionStatus(true);
                     }
                 })
                 .catch(error => {
                     console.error('Poll error:', error);
-                    setConnectionStatus(false);
                 });
-        }
-
-        function setConnectionStatus(online) {
-            const indicator = document.getElementById('connection-status');
-            if (online) {
-                indicator.classList.remove('offline');
-            } else {
-                indicator.classList.add('offline');
-            }
         }
 
         updateGameDots();

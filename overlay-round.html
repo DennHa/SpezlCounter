@@ -48,23 +48,6 @@
             min-width: 60px;
             text-align: center;
         }
-
-        .connection-status {
-            position: fixed;
-            bottom: 8px;
-            right: 8px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #97D375;
-            box-shadow: 0 0 8px #97D375;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
-
-        .connection-status.offline {
-            background: #FF7D6A;
-            box-shadow: 0 0 8px #FF7D6A;
-        }
     </style>
 </head>
 <body>
@@ -72,33 +55,26 @@
         <div class="round-label">Round:</div>
         <div class="round-number" id="round-number">1</div>
     </div>
-    <div class="connection-status" id="connection-status"></div>
 
     <script>
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+        let lastRound = null;
 
         function updateRound() {
             fetch(DB_URL + '?t=' + Date.now())
                 .then(r => r.json())
                 .then(data => {
                     if (data && data.currentRound !== undefined) {
-                        document.getElementById('round-number').textContent = data.currentRound;
-                        setConnectionStatus(true);
+                        // Only update DOM if value changed
+                        if (data.currentRound !== lastRound) {
+                            lastRound = data.currentRound;
+                            document.getElementById('round-number').textContent = data.currentRound;
+                        }
                     }
                 })
                 .catch(error => {
                     console.error('Poll error:', error);
-                    setConnectionStatus(false);
                 });
-        }
-
-        function setConnectionStatus(online) {
-            const indicator = document.getElementById('connection-status');
-            if (online) {
-                indicator.classList.remove('offline');
-            } else {
-                indicator.classList.add('offline');
-            }
         }
 
         updateRound();
