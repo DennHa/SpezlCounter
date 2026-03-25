@@ -38,27 +38,11 @@
             text-align: center;
         }
 
-        .connection-status {
-            position: fixed;
-            bottom: 8px;
-            right: 8px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #97D375;
-            box-shadow: 0 0 8px #97D375;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
 
-        .connection-status.offline {
-            background: #FF7D6A;
-            box-shadow: 0 0 8px #FF7D6A;
-        }
     </style>
 </head>
 <body>
     <div class="timer-display" id="timer-display">00:00</div>
-    <div class="connection-status" id="connection-status"></div>
 
     <script>
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
@@ -86,25 +70,14 @@
                     if (data && data.timerStartTime !== undefined) {
                         timerStartTime = data.timerStartTime;
                         updateTimer();
-                        setConnectionStatus(true);
                     }
                 })
                 .catch(error => {
                     console.error('Poll error:', error);
-                    setConnectionStatus(false);
                 });
         }
 
-        function setConnectionStatus(online) {
-            const indicator = document.getElementById('connection-status');
-            if (online) {
-                indicator.classList.remove('offline');
-            } else {
-                indicator.classList.add('offline');
-            }
-        }
-
-        pollTimer();
+pollTimer();
         timerInterval = setInterval(() => {
             updateTimer();
             pollTimer();

@@ -88,16 +88,7 @@
             color: var(--color-light);
         }
 
-        @keyframes pulse-danger {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.6;
-            }
-        }
 
-        /* Delta animation (floating +/- numbers) */
         .delta {
             position: fixed;
             font-size: 28px;
@@ -127,23 +118,7 @@
             }
         }
 
-        /* Connection indicator */
-        .connection-status {
-            position: fixed;
-            bottom: 8px;
-            right: 8px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--color-green-light);
-            box-shadow: 0 0 8px var(--color-green-light);
-            transition: background 0.3s, box-shadow 0.3s;
-        }
 
-        .connection-status.offline {
-            background: var(--color-red-light);
-            box-shadow: 0 0 8px var(--color-red-light);
-        }
     </style>
 </head>
 <body>
@@ -151,8 +126,6 @@
         <div class="player-name" id="p2-name">Spieler 2</div>
         <div class="life-total state-normal" id="p2-life">20</div>
     </div>
-
-    <div class="connection-status" id="connection-status"></div>
 
     <script>
         // Configuration — replace with your Firebase project URL
@@ -202,16 +175,6 @@
             document.querySelector('#p2-name').textContent = name || 'Spieler 2';
         }
 
-        // Set connection status indicator
-        function setConnectionStatus(online) {
-            const indicator = document.getElementById('connection-status');
-            if (online) {
-                indicator.classList.remove('offline');
-            } else {
-                indicator.classList.add('offline');
-            }
-        }
-
         // Poll Firebase Realtime Database
         async function poll() {
             try {
@@ -223,11 +186,9 @@
                 if (data && data.p2) {
                     updateName(data.p2.name);
                     updateLife(data.p2.life);
-                    setConnectionStatus(true);
                 }
             } catch (error) {
                 console.error('Poll error:', error);
-                setConnectionStatus(false);
             }
         }
 

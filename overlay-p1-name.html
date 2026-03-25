@@ -39,42 +39,17 @@
             letter-spacing: 0.15em;
         }
 
-        .connection-status {
-            position: fixed;
-            bottom: 8px;
-            right: 8px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #97D375;
-            box-shadow: 0 0 8px #97D375;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
 
-        .connection-status.offline {
-            background: #FF7D6A;
-            box-shadow: 0 0 8px #FF7D6A;
-        }
     </style>
 </head>
 <body>
     <div class="player-name" id="p1-name">Spieler 1</div>
-    <div class="connection-status" id="connection-status"></div>
 
     <script>
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
 
         function updateName(name) {
             document.getElementById('p1-name').textContent = name || 'Spieler 1';
-        }
-
-        function setConnectionStatus(online) {
-            const indicator = document.getElementById('connection-status');
-            if (online) {
-                indicator.classList.remove('offline');
-            } else {
-                indicator.classList.add('offline');
-            }
         }
 
         async function poll() {
@@ -86,11 +61,9 @@
                 
                 if (data && data.p1) {
                     updateName(data.p1.name);
-                    setConnectionStatus(true);
                 }
             } catch (error) {
                 console.error('Poll error:', error);
-                setConnectionStatus(false);
             }
         }
 

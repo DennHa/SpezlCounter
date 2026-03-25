@@ -38,42 +38,17 @@
             letter-spacing: 0.1em;
         }
 
-        .connection-status {
-            position: fixed;
-            bottom: 8px;
-            right: 8px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #97D375;
-            box-shadow: 0 0 8px #97D375;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
 
-        .connection-status.offline {
-            background: #FF7D6A;
-            box-shadow: 0 0 8px #FF7D6A;
-        }
     </style>
 </head>
 <body>
     <div class="player-deck" id="p1-deck">Deck</div>
-    <div class="connection-status" id="connection-status"></div>
 
     <script>
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
 
         function updateDeck(deck) {
             document.getElementById('p1-deck').textContent = deck || 'Deck';
-        }
-
-        function setConnectionStatus(online) {
-            const indicator = document.getElementById('connection-status');
-            if (online) {
-                indicator.classList.remove('offline');
-            } else {
-                indicator.classList.add('offline');
-            }
         }
 
         async function poll() {
@@ -85,11 +60,9 @@
                 
                 if (data && data.p1) {
                     updateDeck(data.p1.deck);
-                    setConnectionStatus(true);
                 }
             } catch (error) {
                 console.error('Poll error:', error);
-                setConnectionStatus(false);
             }
         }
 

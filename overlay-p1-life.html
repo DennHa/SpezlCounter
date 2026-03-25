@@ -88,27 +88,11 @@
             }
         }
 
-        .connection-status {
-            position: fixed;
-            bottom: 8px;
-            right: 8px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: #97D375;
-            box-shadow: 0 0 8px #97D375;
-            transition: background 0.3s, box-shadow 0.3s;
-        }
 
-        .connection-status.offline {
-            background: #FF7D6A;
-            box-shadow: 0 0 8px #FF7D6A;
-        }
     </style>
 </head>
 <body>
     <div class="life-total state-normal" id="p1-life">20</div>
-    <div class="connection-status" id="connection-status"></div>
 
     <script>
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
@@ -148,15 +132,6 @@
             setTimeout(() => deltaEl.remove(), 1000);
         }
 
-        function setConnectionStatus(online) {
-            const indicator = document.getElementById('connection-status');
-            if (online) {
-                indicator.classList.remove('offline');
-            } else {
-                indicator.classList.add('offline');
-            }
-        }
-
         async function poll() {
             try {
                 const response = await fetch(DB_URL + '?t=' + Date.now());
@@ -166,11 +141,9 @@
                 
                 if (data && data.p1) {
                     updateLife(data.p1.life);
-                    setConnectionStatus(true);
                 }
             } catch (error) {
                 console.error('Poll error:', error);
-                setConnectionStatus(false);
             }
         }
 
