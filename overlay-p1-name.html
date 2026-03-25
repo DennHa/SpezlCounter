@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Overlay - Player 1 Name</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-dark:         #11233D;
+            --color-light:        #FAF1D9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Lora', serif;
+            font-weight: 400;
+            color: var(--color-light);
+            width: 100vw;
+            height: 60px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 20px;
+        }
+
+        .player-name {
+            font-family: 'Lora', serif;
+            font-size: 28px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 8px;
+            right: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #97D375;
+            box-shadow: 0 0 8px #97D375;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .connection-status.offline {
+            background: #FF7D6A;
+            box-shadow: 0 0 8px #FF7D6A;
+        }
+    </style>
+</head>
+<body>
+    <div class="player-name" id="p1-name">Spieler 1</div>
+    <div class="connection-status" id="connection-status"></div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+
+        function updateName(name) {
+            document.getElementById('p1-name').textContent = name || 'Spieler 1';
+        }
+
+        function setConnectionStatus(online) {
+            const indicator = document.getElementById('connection-status');
+            if (online) {
+                indicator.classList.remove('offline');
+            } else {
+                indicator.classList.add('offline');
+            }
+        }
+
+        async function poll() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Firebase fetch failed');
+                
+                const data = await response.json();
+                
+                if (data && data.p1) {
+                    updateName(data.p1.name);
+                    setConnectionStatus(true);
+                }
+            } catch (error) {
+                console.error('Poll error:', error);
+                setConnectionStatus(false);
+            }
+        }
+
+        poll();
+        setInterval(poll, 500);
+    </script>
+</body>
+</html>

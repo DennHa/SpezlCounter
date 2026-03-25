@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Overlay - Timer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-light:        #FAF1D9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Lora', serif;
+            font-weight: 400;
+            color: var(--color-light);
+            width: 100vw;
+            height: 80px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 20px;
+        }
+
+        .timer-display {
+            font-size: 56px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            font-family: 'Courier New', monospace;
+            text-align: center;
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 8px;
+            right: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #97D375;
+            box-shadow: 0 0 8px #97D375;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .connection-status.offline {
+            background: #FF7D6A;
+            box-shadow: 0 0 8px #FF7D6A;
+        }
+    </style>
+</head>
+<body>
+    <div class="timer-display" id="timer-display">00:00</div>
+    <div class="connection-status" id="connection-status"></div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+
+        let timerStartTime = null;
+        let timerInterval = null;
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+
+        function updateTimer() {
+            if (timerStartTime !== null) {
+                const elapsed = Math.floor((Date.now() - timerStartTime) / 1000);
+                document.getElementById('timer-display').textContent = formatTime(elapsed);
+            }
+        }
+
+        function pollTimer() {
+            fetch(DB_URL + '?t=' + Date.now())
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.timerStartTime !== undefined) {
+                        timerStartTime = data.timerStartTime;
+                        updateTimer();
+                        setConnectionStatus(true);
+                    }
+                })
+                .catch(error => {
+                    console.error('Poll error:', error);
+                    setConnectionStatus(false);
+                });
+        }
+
+        function setConnectionStatus(online) {
+            const indicator = document.getElementById('connection-status');
+            if (online) {
+                indicator.classList.remove('offline');
+            } else {
+                indicator.classList.add('offline');
+            }
+        }
+
+        pollTimer();
+        timerInterval = setInterval(() => {
+            updateTimer();
+            pollTimer();
+        }, 100);
+    </script>
+</body>
+</html>

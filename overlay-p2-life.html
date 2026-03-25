@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Overlay - Player 2 Life</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-light:        #FAF1D9;
+            --color-red-dark:     #AD230F;
+            --color-red-light:    #FF7D6A;
+            --color-yellow-dark:  #C88F00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Lora', serif;
+            font-weight: 400;
+            color: var(--color-light);
+            width: 100vw;
+            height: 200px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 20px;
+        }
+
+        .life-total {
+            font-size: 144px;
+            font-weight: 600;
+            line-height: 1;
+            transition: color 0.3s ease;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Life state colors */
+        .life-total.state-danger {
+            color: var(--color-red-light);
+        }
+
+        .life-total.state-critical {
+            color: var(--color-red-dark);
+        }
+
+        .life-total.state-warning {
+            color: var(--color-yellow-dark);
+        }
+
+        .life-total.state-normal {
+            color: var(--color-light);
+        }
+
+        /* Delta animation (floating +/- numbers) */
+        .delta {
+            position: fixed;
+            font-size: 48px;
+            font-weight: 600;
+            font-family: 'Lora', serif;
+            pointer-events: none;
+            z-index: 100;
+            animation: float-up 1s ease-out forwards;
+        }
+
+        .delta.positive {
+            color: #97D375;
+        }
+
+        .delta.negative {
+            color: #FF7D6A;
+        }
+
+        @keyframes float-up {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-60px);
+            }
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 8px;
+            right: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #97D375;
+            box-shadow: 0 0 8px #97D375;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .connection-status.offline {
+            background: #FF7D6A;
+            box-shadow: 0 0 8px #FF7D6A;
+        }
+    </style>
+</head>
+<body>
+    <div class="life-total state-normal" id="p2-life">20</div>
+    <div class="connection-status" id="connection-status"></div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+        
+        let lastP2Life = 20;
+
+        function getLifeState(life) {
+            if (life <= 0) return 'state-critical';
+            if (life <= 5) return 'state-danger';
+            if (life <= 10) return 'state-warning';
+            return 'state-normal';
+        }
+
+        function updateLife(newLife) {
+            const element = document.querySelector('#p2-life');
+            
+            element.textContent = newLife;
+            element.className = 'life-total ' + getLifeState(newLife);
+
+            if (lastP2Life !== newLife) {
+                const delta = newLife - lastP2Life;
+                const sign = delta > 0 ? '+' : '';
+                showDelta(sign + delta, element);
+            }
+
+            lastP2Life = newLife;
+        }
+
+        function showDelta(text, sourceElement) {
+            const deltaEl = document.createElement('div');
+            deltaEl.className = 'delta ' + (text.startsWith('+') ? 'positive' : 'negative');
+            deltaEl.textContent = text;
+            deltaEl.style.left = sourceElement.getBoundingClientRect().left + 'px';
+            deltaEl.style.top = sourceElement.getBoundingClientRect().top + 'px';
+            document.body.appendChild(deltaEl);
+
+            setTimeout(() => deltaEl.remove(), 1000);
+        }
+
+        function setConnectionStatus(online) {
+            const indicator = document.getElementById('connection-status');
+            if (online) {
+                indicator.classList.remove('offline');
+            } else {
+                indicator.classList.add('offline');
+            }
+        }
+
+        async function poll() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Firebase fetch failed');
+                
+                const data = await response.json();
+                
+                if (data && data.p2) {
+                    updateLife(data.p2.life);
+                    setConnectionStatus(true);
+                }
+            } catch (error) {
+                console.error('Poll error:', error);
+                setConnectionStatus(false);
+            }
+        }
+
+        poll();
+        setInterval(poll, 500);
+    </script>
+</body>
+</html>

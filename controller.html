@@ -339,9 +339,50 @@
             width: 100%;
             display: flex;
             justify-content: space-between;
+            align-items: center;
             padding: 0 16px;
             box-sizing: border-box;
             z-index: 1001;
+        }
+
+        .timer-display-center {
+            background: rgba(0, 0, 0, 0.3);
+            color: var(--color-light);
+            font-size: 36px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.05em;
+            padding: 12px 32px;
+            border-radius: 4px;
+            min-width: 140px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .timer-display-center:hover {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .timer-display-center.paused {
+            opacity: 0.6;
+        }
+
+        .round-display-center {
+            color: var(--color-light);
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 1002;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 8px 16px;
+            border-radius: 4px;
         }
 
         .next-game-button {
@@ -588,8 +629,10 @@
 
     <!-- Game UI -->
     <div class="game-container hidden" id="game-container">
+        <div class="round-display-center" id="round-display">Round 1</div>
         <div class="top-controls">
             <button class="next-game-button" id="reset-life-btn">⏭️ NEXT GAME</button>
+            <div class="timer-display-center" id="timer-display">00:00</div>
             <button class="end-game-button" id="end-game-btn">⏹️ END GAME</button>
         </div>
 
@@ -653,11 +696,17 @@
 
         let currentState = {
             p1: { name: 'Spieler 1', life: 20, gamesWon: 0 },
-            p2: { name: 'Spieler 2', life: 20, gamesWon: 0 }
+            p2: { name: 'Spieler 2', life: 20, gamesWon: 0 },
+            currentRound: 1,
+            timerStartTime: null,
+            boFormat: 3
         };
 
         let deltaAccumulated = { p1: 0, p2: 0 };
         let deltaTimeouts = { p1: null, p2: null };
+        let timerInterval = null;
+        let timerPaused = false;
+        let timerPausedOffset = 0;
 
         // Update DOM
         function updateUI() {
@@ -667,6 +716,7 @@
                 document.getElementById('display-' + player + '-name').textContent = currentState[player].name;
             }
             updateGameDots();
+            updateRoundDisplay();
         }
 
         // Display game won dots
@@ -682,6 +732,81 @@
                     dotsContainer.appendChild(dot);
                 }
             }
+        }
+
+        // Format time display MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            if (currentState.timerStartTime !== null) {
+                let elapsed;
+                if (timerPaused) {
+                    elapsed = timerPausedOffset;
+                } else {
+                    elapsed = Math.floor((Date.now() - currentState.timerStartTime) / 1000) + timerPausedOffset;
+                }
+                document.getElementById('timer-display').textContent = formatTime(elapsed);
+            } else {
+                document.getElementById('timer-display').textContent = '00:00';
+            }
+        }
+
+        // Update round display
+        function updateRoundDisplay() {
+            document.getElementById('round-display').textContent = 'Round ' + currentState.currentRound;
+        }
+
+        // Toggle timer pause
+        function toggleTimer() {
+            const timerEl = document.getElementById('timer-display');
+            if (timerPaused) {
+                // Resume
+                timerPaused = false;
+                timerEl.classList.remove('paused');
+                currentState.timerStartTime = Date.now() - (timerPausedOffset * 1000);
+            } else {
+                // Pause
+                timerPaused = true;
+                timerEl.classList.add('paused');
+                timerPausedOffset = Math.floor((Date.now() - currentState.timerStartTime) / 1000);
+            }
+        }
+
+        // Load best-of format from Firebase
+        async function loadBoFormat() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load');
+                
+                const data = await response.json();
+                if (data && data.boFormat) {
+                    currentState.boFormat = data.boFormat;
+                }
+            } catch (error) {
+                console.error('Error loading boFormat:', error);
+            }
+        }
+
+        // Start timer for the round
+        function startTimer() {
+            currentState.timerStartTime = Date.now();
+            updateTimerDisplay();
+            updateRoundDisplay();
+            
+            // Clear any existing interval
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+            
+            // Update timer every 100ms
+            timerInterval = setInterval(() => {
+                updateTimerDisplay();
+            }, 100);
         }
 
         // Show/update accumulated delta and reset after 5 seconds of no clicks
@@ -726,7 +851,7 @@
         }
 
         // Handle name entry
-        document.getElementById('start-game-btn').addEventListener('click', () => {
+        document.getElementById('start-game-btn').addEventListener('click', async () => {
             const p1Name = document.getElementById('name-p1').value.trim() || 'Spieler 1';
             const p2Name = document.getElementById('name-p2').value.trim() || 'Spieler 2';
 
@@ -734,6 +859,12 @@
             currentState.p2.name = p2Name;
             currentState.p1.gamesWon = 0;
             currentState.p2.gamesWon = 0;
+            currentState.currentRound = 1;
+            timerPaused = false;
+            timerPausedOffset = 0;
+
+            // Load best-of format from Firebase
+            await loadBoFormat();
 
             // Hide modal, show game
             document.getElementById('name-entry-modal').classList.add('hidden');
@@ -742,20 +873,30 @@
             updateUI();
             updateDeltaDisplay('p1');
             updateDeltaDisplay('p2');
+            startTimer();
 
             // Write to Firebase
             writeToFirebase({
                 'p1': currentState.p1,
-                'p2': currentState.p2
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound,
+                'timerStartTime': currentState.timerStartTime,
+                'boFormat': currentState.boFormat
             });
         });
 
         // Handle skip button (start with default names)
-        document.getElementById('skip-game-btn').addEventListener('click', () => {
+        document.getElementById('skip-game-btn').addEventListener('click', async () => {
             currentState.p1.name = 'Spieler 1';
             currentState.p2.name = 'Spieler 2';
             currentState.p1.gamesWon = 0;
             currentState.p2.gamesWon = 0;
+            currentState.currentRound = 1;
+            timerPaused = false;
+            timerPausedOffset = 0;
+
+            // Load best-of format from Firebase
+            await loadBoFormat();
 
             // Hide modal, show game
             document.getElementById('name-entry-modal').classList.add('hidden');
@@ -764,11 +905,15 @@
             updateUI();
             updateDeltaDisplay('p1');
             updateDeltaDisplay('p2');
+            startTimer();
 
             // Write to Firebase
             writeToFirebase({
                 'p1': currentState.p1,
-                'p2': currentState.p2
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound,
+                'timerStartTime': currentState.timerStartTime,
+                'boFormat': currentState.boFormat
             });
         });
 
@@ -788,14 +933,28 @@
 
         // Handle player 1 winner button
         document.getElementById('p1-winner-btn').addEventListener('click', () => {
-            currentState.p1.gamesWon = Math.min(2, (currentState.p1.gamesWon || 0) + 1);
-            proceedToNextGame();
+            currentState.p1.gamesWon = Math.min(currentState.boFormat, (currentState.p1.gamesWon || 0) + 1);
+            
+            // Check if series is won
+            const winsNeeded = Math.ceil(currentState.boFormat / 2);
+            if (currentState.p1.gamesWon >= winsNeeded) {
+                endSeries('p1');
+            } else {
+                proceedToNextGame();
+            }
         });
 
         // Handle player 2 winner button
         document.getElementById('p2-winner-btn').addEventListener('click', () => {
-            currentState.p2.gamesWon = Math.min(2, (currentState.p2.gamesWon || 0) + 1);
-            proceedToNextGame();
+            currentState.p2.gamesWon = Math.min(currentState.boFormat, (currentState.p2.gamesWon || 0) + 1);
+            
+            // Check if series is won
+            const winsNeeded = Math.ceil(currentState.boFormat / 2);
+            if (currentState.p2.gamesWon >= winsNeeded) {
+                endSeries('p2');
+            } else {
+                proceedToNextGame();
+            }
         });
 
         // Cancel next game modal
@@ -803,18 +962,62 @@
             document.getElementById('next-game-modal').classList.add('hidden');
         });
 
-        function proceedToNextGame() {
+        // End series (winner declared)
+        function endSeries(winner) {
             document.getElementById('next-game-modal').classList.add('hidden');
             
-            // Reset life only
-            currentState.p1.life = 20;
-            currentState.p2.life = 20;
+            // Clear timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            alert(currentState[winner].name + ' wins the series! Game ends.');
+            
+            // Reset state
+            currentState.p1 = { name: 'Spieler 1', life: 20, gamesWon: 0 };
+            currentState.p2 = { name: 'Spieler 2', life: 20, gamesWon: 0 };
+            currentState.currentRound = 1;
+            currentState.timerStartTime = null;
+            timerPaused = false;
+            timerPausedOffset = 0;
             deltaAccumulated.p1 = 0;
             deltaAccumulated.p2 = 0;
 
             // Clear timeouts
             clearTimeout(deltaTimeouts.p1);
             clearTimeout(deltaTimeouts.p2);
+
+            // Clear name inputs
+            document.getElementById('name-p1').value = '';
+            document.getElementById('name-p2').value = '';
+
+            // Hide game, show modal
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('name-entry-modal').classList.remove('hidden');
+
+            // Focus first name input
+            document.getElementById('name-p1').focus();
+        }
+
+        function proceedToNextGame() {
+            document.getElementById('next-game-modal').classList.add('hidden');
+            
+            // Increment round and reset life
+            currentState.currentRound += 1;
+            currentState.p1.life = 20;
+            currentState.p2.life = 20;
+            deltaAccumulated.p1 = 0;
+            deltaAccumulated.p2 = 0;
+            timerPaused = false;
+            timerPausedOffset = 0;
+
+            // Clear timeouts
+            clearTimeout(deltaTimeouts.p1);
+            clearTimeout(deltaTimeouts.p2);
+
+            // Restart timer
+            startTimer();
 
             updateUI();
             updateDeltaDisplay('p1');
@@ -823,7 +1026,10 @@
             // Write to Firebase
             writeToFirebase({
                 'p1': currentState.p1,
-                'p2': currentState.p2
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound,
+                'timerStartTime': currentState.timerStartTime,
+                'boFormat': currentState.boFormat
             });
         }
 
@@ -836,9 +1042,17 @@
         document.getElementById('confirm-end-game-btn').addEventListener('click', () => {
             document.getElementById('end-game-modal').classList.add('hidden');
             
+            // Clear timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
             // Reset state
             currentState.p1 = { name: 'Spieler 1', life: 20, gamesWon: 0 };
             currentState.p2 = { name: 'Spieler 2', life: 20, gamesWon: 0 };
+            currentState.currentRound = 1;
+            currentState.timerStartTime = null;
             deltaAccumulated.p1 = 0;
             deltaAccumulated.p2 = 0;
 
@@ -878,12 +1092,20 @@
                 
                 // Update UI and Firebase
                 updateUI();
-                writeToFirebase({ [player]: currentState[player] });
+                writeToFirebase({ 
+                    [player]: currentState[player],
+                    'currentRound': currentState.currentRound,
+                    'timerStartTime': currentState.timerStartTime,
+                    'boFormat': currentState.boFormat
+                });
             });
         });
 
         // Focus first name input
         document.getElementById('name-p1').focus();
+
+        // Add timer click handler for pause/resume
+        document.getElementById('timer-display').addEventListener('click', toggleTimer);
     </script>
 </body>
 </html>

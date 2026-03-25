@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Pauper Overlay - Player 1 Wins</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-light:        #FAF1D9;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            font-family: 'Lora', serif;
+            font-weight: 400;
+            color: var(--color-light);
+            width: 100vw;
+            height: 100px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 0 20px;
+        }
+
+        .game-dots {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+        }
+
+        .game-dots-label {
+            opacity: 0.7;
+        }
+
+        .game-dots-container {
+            display: flex;
+            gap: 12px;
+        }
+
+        .game-dot {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.4;
+        }
+
+        .game-dot.won {
+            opacity: 1;
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 8px;
+            right: 8px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #97D375;
+            box-shadow: 0 0 8px #97D375;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        .connection-status.offline {
+            background: #FF7D6A;
+            box-shadow: 0 0 8px #FF7D6A;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-dots">
+        <div class="game-dots-label">Series:</div>
+        <div class="game-dots-container" id="p1-dots"></div>
+    </div>
+    <div class="connection-status" id="connection-status"></div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+
+        function updateGameDots() {
+            const dotsContainer = document.getElementById('p1-dots');
+            dotsContainer.innerHTML = '';
+            
+            fetch(DB_URL + '?t=' + Date.now())
+                .then(r => r.json())
+                .then(data => {
+                    if (data && data.p1) {
+                        const gamesWon = data.p1.gamesWon || 0;
+                        for (let i = 0; i < 2; i++) {
+                            const dot = document.createElement('div');
+                            dot.className = 'game-dot' + (i < gamesWon ? ' won' : '');
+                            dotsContainer.appendChild(dot);
+                        }
+                        setConnectionStatus(true);
+                    }
+                })
+                .catch(error => {
+                    console.error('Poll error:', error);
+                    setConnectionStatus(false);
+                });
+        }
+
+        function setConnectionStatus(online) {
+            const indicator = document.getElementById('connection-status');
+            if (online) {
+                indicator.classList.remove('offline');
+            } else {
+                indicator.classList.add('offline');
+            }
+        }
+
+        updateGameDots();
+        setInterval(updateGameDots, 500);
+    </script>
+</body>
+</html>
