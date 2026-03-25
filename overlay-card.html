@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MTG Card Overlay</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: transparent;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            font-family: 'Lora', serif;
+        }
+
+        .card-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-image {
+            width: 300px;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .card-image.loaded {
+            display: block;
+        }
+
+        .error-text {
+            color: #FAF1D9;
+            font-size: 16px;
+            text-align: center;
+            display: none;
+        }
+
+        .error-text.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="card-container">
+        <img class="card-image" id="card-image" alt="Magic Card">
+        <div class="error-text" id="error-text">No card image set</div>
+    </div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+        let lastCardImageUrl = '';
+
+        async function extractCardImageUrl(scryfallUrl) {
+            try {
+                // Handle Scryfall URLs in format: https://scryfall.com/card/{setcode}/{number}/{name}
+                if (!scryfallUrl || !scryfallUrl.includes('scryfall.com')) {
+                    return null;
+                }
+
+                // Extract set and number from URL: /card/thb/179 or /cards/neo/1 or /card/thb/179/moss-viper
+                const cardMatch = scryfallUrl.match(/\/card[s]?\/([a-z0-9]+)\/([0-9]+)/);
+                if (!cardMatch) {
+                    console.error('Could not parse Scryfall URL:', scryfallUrl);
+                    return null;
+                }
+
+                const setCode = cardMatch[1];
+                const cardNumber = cardMatch[2];
+                const apiUrl = `https://api.scryfall.com/cards/${setCode}/${cardNumber}`;
+                
+                console.log('Fetching card from:', apiUrl);
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    console.error('API response not ok:', response.status);
+                    return null;
+                }
+
+                const cardData = await response.json();
+                // Return the card image URL (use normal high quality version)
+                const imageUrl = cardData.image_uris?.normal || cardData.image_uris?.large || null;
+                console.log('Successfully fetched card:', cardData.name);
+                console.log('Image URL:', imageUrl);
+                return imageUrl;
+            } catch (error) {
+                console.error('Error fetching card image:', error);
+                return null;
+            }
+        }
+
+        async function updateCardDisplay() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to fetch');
+
+                const data = await response.json();
+                const cardImageUrl = data.cardImageUrl || '';
+
+                if (cardImageUrl !== lastCardImageUrl) {
+                    lastCardImageUrl = cardImageUrl;
+
+                    const cardImage = document.getElementById('card-image');
+                    const errorText = document.getElementById('error-text');
+
+                    if (!cardImageUrl) {
+                        cardImage.classList.remove('loaded');
+                        errorText.classList.add('show');
+                    } else {
+                        // Extract the actual image URL from Scryfall
+                        const imageUrl = await extractCardImageUrl(cardImageUrl);
+                        
+                        if (imageUrl) {
+                            cardImage.src = imageUrl;
+                            cardImage.onload = () => {
+                                cardImage.classList.add('loaded');
+                                errorText.classList.remove('show');
+                            };
+                            cardImage.onerror = () => {
+                                cardImage.classList.remove('loaded');
+                                errorText.classList.add('show');
+                            };
+                        } else {
+                            cardImage.classList.remove('loaded');
+                            errorText.textContent = 'Invalid Scryfall URL';
+                            errorText.classList.add('show');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Update error:', error);
+            }
+        }
+
+        // Poll for updates
+        setInterval(updateCardDisplay, 500);
+        updateCardDisplay();
+    </script>
+</body>
+</html>

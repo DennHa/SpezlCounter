@@ -241,6 +241,73 @@
         .format-btn:active {
             transform: scale(0.95);
         }
+
+        .deck-edit-field {
+            padding: 8px 12px;
+            background: rgba(250, 241, 217, 0.1);
+            border: 1px solid var(--color-blue);
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 14px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .deck-edit-field:focus {
+            outline: none;
+            background: rgba(250, 241, 217, 0.15);
+        }
+
+        .name-edit-field {
+            padding: 8px 12px;
+            background: rgba(250, 241, 217, 0.1);
+            border: 1px solid var(--color-blue);
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 14px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .name-edit-field:focus {
+            outline: none;
+            background: rgba(250, 241, 217, 0.15);
+        }
+
+        .card-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(250, 241, 217, 0.05);
+            border: 1px solid var(--color-blue);
+            border-radius: 4px;
+        }
+
+        .card-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+            margin-bottom: 12px;
+        }
+
+        .card-input-field {
+            padding: 8px 12px;
+            background: rgba(250, 241, 217, 0.1);
+            border: 1px solid var(--color-blue);
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 14px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .card-input-field:focus {
+            outline: none;
+            background: rgba(250, 241, 217, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -270,10 +337,29 @@
                 <button class="format-btn" id="bo5-btn" data-format="5">BEST OF 5</button>
             </div>
 
+            <div class="card-section">
+                <div class="card-section-title">CARD IMAGE (Scryfall URL)</div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" class="card-input-field" id="card-image-input" placeholder="https://scryfall.com/cards/..." style="flex: 1;">
+                    <button class="btn btn-secondary" id="push-card-btn" style="padding: 8px 16px; font-size: 14px; white-space: nowrap;">PUSH</button>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 20px;">
+                <button class="btn btn-secondary" id="refresh-btn" style="padding: 12px 40px;">REFRESH NAMES & DECKS</button>
+            </div>
+
             <div class="admin-grid">
                 <!-- Player 1 -->
                 <div class="player-box">
-                    <div class="player-name" id="admin-p1-name">Player 1</div>
+                    <div class="stat-row">
+                        <div class="stat-label">Name</div>
+                        <input type="text" class="name-edit-field" id="p1-name-input" placeholder="Player 1...">
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Deck</div>
+                        <input type="text" class="deck-edit-field" id="p1-deck-input" placeholder="Deck...">
+                    </div>
                     <div class="stat-row">
                         <div class="stat-label">Games Won</div>
                         <div class="game-wins-control">
@@ -286,7 +372,14 @@
 
                 <!-- Player 2 -->
                 <div class="player-box">
-                    <div class="player-name" id="admin-p2-name">Player 2</div>
+                    <div class="stat-row">
+                        <div class="stat-label">Name</div>
+                        <input type="text" class="name-edit-field" id="p2-name-input" placeholder="Player 2...">
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Deck</div>
+                        <input type="text" class="deck-edit-field" id="p2-deck-input" placeholder="Deck...">
+                    </div>
                     <div class="stat-row">
                         <div class="stat-label">Games Won</div>
                         <div class="game-wins-control">
@@ -312,6 +405,7 @@
 
         let currentGameState = null;
         let currentBoFormat = 3;
+        let currentCardImageUrl = '';
 
         // Login form handler
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -336,12 +430,13 @@
                 if (!response.ok) throw new Error('Failed to load game state');
                 
                 const data = await response.json();
-                currentGameState = data.match || {
-                    p1: { name: 'Spieler 1', life: 20, gamesWon: 0 },
-                    p2: { name: 'Spieler 2', life: 20, gamesWon: 0 }
+                currentGameState = {
+                    p1: data.p1 || { name: 'Spieler 1', deck: 'Deck', life: 20, gamesWon: 0 },
+                    p2: data.p2 || { name: 'Spieler 2', deck: 'Deck', life: 20, gamesWon: 0 }
                 };
 
                 currentBoFormat = data.boFormat || 3;
+                currentCardImageUrl = data.cardImageUrl || '';
                 updateAdminUI();
             } catch (error) {
                 console.error('Load error:', error);
@@ -351,15 +446,49 @@
 
         // Update admin UI with current state
         function updateAdminUI() {
-            document.getElementById('admin-p1-name').textContent = currentGameState.p1.name || 'Player 1';
-            document.getElementById('admin-p2-name').textContent = currentGameState.p2.name || 'Player 2';
+            document.getElementById('p1-name-input').value = currentGameState.p1.name || 'Spieler 1';
+            document.getElementById('p2-name-input').value = currentGameState.p2.name || 'Spieler 2';
             document.getElementById('p1-wins').textContent = currentGameState.p1.gamesWon || 0;
             document.getElementById('p2-wins').textContent = currentGameState.p2.gamesWon || 0;
+            document.getElementById('p1-deck-input').value = currentGameState.p1.deck || 'Deck';
+            document.getElementById('p2-deck-input').value = currentGameState.p2.deck || 'Deck';
+            document.getElementById('card-image-input').value = currentCardImageUrl || '';
 
             // Update format buttons
             document.getElementById('bo3-btn').classList.toggle('active', currentBoFormat === 3);
             document.getElementById('bo5-btn').classList.toggle('active', currentBoFormat === 5);
         }
+
+        // Refresh only name and deck fields from Firebase
+        document.getElementById('refresh-btn').addEventListener('click', async () => {
+            await loadGameState();
+            updateAdminUI();
+            const successEl = document.getElementById('save-success');
+            successEl.textContent = 'Refreshed';
+            setTimeout(() => { successEl.textContent = ''; }, 2000);
+        });
+
+        // Push card image to Firebase
+        document.getElementById('push-card-btn').addEventListener('click', async () => {
+            currentCardImageUrl = document.getElementById('card-image-input').value.trim() || '';
+
+            try {
+                const response = await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        'cardImageUrl': currentCardImageUrl
+                    })
+                });
+                if (!response.ok) throw new Error('Failed to push card');
+                
+                const successEl = document.getElementById('save-success');
+                successEl.textContent = 'Card pushed';
+                setTimeout(() => { successEl.textContent = ''; }, 2000);
+            } catch (error) {
+                document.getElementById('firebase-error').textContent = 'Failed to push card';
+            }
+        });
 
         // Format button handlers
         document.getElementById('bo3-btn').addEventListener('click', () => {
@@ -396,13 +525,22 @@
 
         // Save changes to Firebase
         document.getElementById('save-btn').addEventListener('click', async () => {
+            // Update player names and deck names from inputs
+            currentGameState.p1.name = document.getElementById('p1-name-input').value.trim() || 'Spieler 1';
+            currentGameState.p2.name = document.getElementById('p2-name-input').value.trim() || 'Spieler 2';
+            currentGameState.p1.deck = document.getElementById('p1-deck-input').value.trim() || 'Deck';
+            currentGameState.p2.deck = document.getElementById('p2-deck-input').value.trim() || 'Deck';
+            currentCardImageUrl = document.getElementById('card-image-input').value.trim() || '';
+
             try {
                 const response = await fetch(DB_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        match: currentGameState,
-                        boFormat: currentBoFormat
+                    body: JSON.stringify({
+                        'p1': currentGameState.p1,
+                        'p2': currentGameState.p2,
+                        'boFormat': currentBoFormat,
+                        'cardImageUrl': currentCardImageUrl
                     })
                 });
                 if (!response.ok) throw new Error('Failed to save');
@@ -423,14 +561,18 @@
             currentGameState.p2.gamesWon = 0;
             currentGameState.p1.life = 20;
             currentGameState.p2.life = 20;
+            currentGameState.p1.deck = 'Deck';
+            currentGameState.p2.deck = 'Deck';
 
             try {
                 const response = await fetch(DB_URL, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        match: currentGameState,
-                        boFormat: currentBoFormat
+                    body: JSON.stringify({
+                        'p1': currentGameState.p1,
+                        'p2': currentGameState.p2,
+                        'boFormat': currentBoFormat,
+                        'currentRound': 1
                     })
                 });
                 if (!response.ok) throw new Error('Failed to reset');

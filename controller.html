@@ -64,15 +64,23 @@
             grid-template-columns: 1fr 1fr;
             gap: 40px;
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             padding: 0 40px;
         }
 
         .name-input-group {
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
             align-items: center;
+        }
+
+        .name-input-sublabel {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+            text-transform: uppercase;
         }
 
         .name-input-label {
@@ -345,6 +353,14 @@
             z-index: 1001;
         }
 
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
         .timer-display-center {
             background: rgba(0, 0, 0, 0.3);
             color: var(--color-light);
@@ -368,20 +384,17 @@
         }
 
         .timer-display-center.paused {
-            opacity: 0.6;
+            background: rgba(173, 35, 15, 0.5);
+            color: #FF7D6A;
         }
 
         .round-display-center {
             color: var(--color-light);
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 600;
             letter-spacing: 0.1em;
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 1002;
             background: rgba(0, 0, 0, 0.3);
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 4px;
         }
 
@@ -610,15 +623,21 @@
 <body>
     <!-- Name Entry Modal -->
     <div class="name-entry-modal" id="name-entry-modal">
-        <div class="name-entry-title">Enter Player Names</div>
+        <div class="name-entry-title">Enter Player Info</div>
         <div class="name-inputs-grid">
             <div class="name-input-group">
                 <div class="name-input-label">Player 1</div>
+                <div class="name-input-sublabel">Name</div>
                 <input type="text" class="name-input-field" id="name-p1" inputmode="text" placeholder="Name...">
+                <div class="name-input-sublabel">Deck</div>
+                <input type="text" class="name-input-field" id="deck-p1" inputmode="text" placeholder="Deck...">
             </div>
             <div class="name-input-group">
                 <div class="name-input-label">Player 2</div>
+                <div class="name-input-sublabel">Name</div>
                 <input type="text" class="name-input-field" id="name-p2" inputmode="text" placeholder="Name...">
+                <div class="name-input-sublabel">Deck</div>
+                <input type="text" class="name-input-field" id="deck-p2" inputmode="text" placeholder="Deck...">
             </div>
         </div>
         <div class="name-entry-buttons">
@@ -629,10 +648,12 @@
 
     <!-- Game UI -->
     <div class="game-container hidden" id="game-container">
-        <div class="round-display-center" id="round-display">Round 1</div>
         <div class="top-controls">
             <button class="next-game-button" id="reset-life-btn">⏭️ NEXT GAME</button>
-            <div class="timer-display-center" id="timer-display">00:00</div>
+            <div class="timer-container">
+                <div class="timer-display-center" id="timer-display">00:00</div>
+                <div class="round-display-center" id="round-display">Round 1</div>
+            </div>
             <button class="end-game-button" id="end-game-btn">⏹️ END GAME</button>
         </div>
 
@@ -695,8 +716,8 @@
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
 
         let currentState = {
-            p1: { name: 'Spieler 1', life: 20, gamesWon: 0 },
-            p2: { name: 'Spieler 2', life: 20, gamesWon: 0 },
+            p1: { name: 'Spieler 1', deck: 'Deck', life: 20, gamesWon: 0 },
+            p2: { name: 'Spieler 2', deck: 'Deck', life: 20, gamesWon: 0 },
             currentRound: 1,
             timerStartTime: null,
             boFormat: 3
@@ -769,11 +790,13 @@
                 timerPaused = false;
                 timerEl.classList.remove('paused');
                 currentState.timerStartTime = Date.now() - (timerPausedOffset * 1000);
+                updateTimerDisplay();
             } else {
                 // Pause
                 timerPaused = true;
                 timerEl.classList.add('paused');
                 timerPausedOffset = Math.floor((Date.now() - currentState.timerStartTime) / 1000);
+                timerEl.textContent = 'PAUSE';
             }
         }
 
@@ -787,6 +810,7 @@
                 if (data && data.boFormat) {
                     currentState.boFormat = data.boFormat;
                 }
+                // Note: cardImageUrl is managed by admin panel, we preserve it via PATCH
             } catch (error) {
                 console.error('Error loading boFormat:', error);
             }
@@ -853,10 +877,14 @@
         // Handle name entry
         document.getElementById('start-game-btn').addEventListener('click', async () => {
             const p1Name = document.getElementById('name-p1').value.trim() || 'Spieler 1';
+            const p1Deck = document.getElementById('deck-p1').value.trim() || 'Deck';
             const p2Name = document.getElementById('name-p2').value.trim() || 'Spieler 2';
+            const p2Deck = document.getElementById('deck-p2').value.trim() || 'Deck';
 
             currentState.p1.name = p1Name;
+            currentState.p1.deck = p1Deck;
             currentState.p2.name = p2Name;
+            currentState.p2.deck = p2Deck;
             currentState.p1.gamesWon = 0;
             currentState.p2.gamesWon = 0;
             currentState.currentRound = 1;
@@ -888,7 +916,9 @@
         // Handle skip button (start with default names)
         document.getElementById('skip-game-btn').addEventListener('click', async () => {
             currentState.p1.name = 'Spieler 1';
+            currentState.p1.deck = 'Deck';
             currentState.p2.name = 'Spieler 2';
+            currentState.p2.deck = 'Deck';
             currentState.p1.gamesWon = 0;
             currentState.p2.gamesWon = 0;
             currentState.currentRound = 1;
@@ -975,8 +1005,8 @@
             alert(currentState[winner].name + ' wins the series! Game ends.');
             
             // Reset state
-            currentState.p1 = { name: 'Spieler 1', life: 20, gamesWon: 0 };
-            currentState.p2 = { name: 'Spieler 2', life: 20, gamesWon: 0 };
+            currentState.p1 = { name: 'Spieler 1', deck: 'Deck', life: 20, gamesWon: 0 };
+            currentState.p2 = { name: 'Spieler 2', deck: 'Deck', life: 20, gamesWon: 0 };
             currentState.currentRound = 1;
             currentState.timerStartTime = null;
             timerPaused = false;
@@ -990,7 +1020,9 @@
 
             // Clear name inputs
             document.getElementById('name-p1').value = '';
+            document.getElementById('deck-p1').value = '';
             document.getElementById('name-p2').value = '';
+            document.getElementById('deck-p2').value = '';
 
             // Hide game, show modal
             document.getElementById('game-container').classList.add('hidden');
@@ -1049,10 +1081,12 @@
             }
             
             // Reset state
-            currentState.p1 = { name: 'Spieler 1', life: 20, gamesWon: 0 };
-            currentState.p2 = { name: 'Spieler 2', life: 20, gamesWon: 0 };
+            currentState.p1 = { name: 'Spieler 1', deck: 'Deck', life: 20, gamesWon: 0 };
+            currentState.p2 = { name: 'Spieler 2', deck: 'Deck', life: 20, gamesWon: 0 };
             currentState.currentRound = 1;
             currentState.timerStartTime = null;
+            timerPaused = false;
+            timerPausedOffset = 0;
             deltaAccumulated.p1 = 0;
             deltaAccumulated.p2 = 0;
 
@@ -1062,7 +1096,9 @@
 
             // Clear name inputs
             document.getElementById('name-p1').value = '';
+            document.getElementById('deck-p1').value = '';
             document.getElementById('name-p2').value = '';
+            document.getElementById('deck-p2').value = '';
 
             // Hide game, show modal
             document.getElementById('game-container').classList.add('hidden');
