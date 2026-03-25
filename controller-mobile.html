@@ -2,10 +2,8 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>MTG Pauper Controller - Mobile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>MTG Pauper Controller Mobile</title>
     <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -20,7 +18,6 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
 
         html, body {
@@ -33,10 +30,9 @@
             user-select: none;
             -webkit-touch-callout: none;
             overflow: hidden;
-            font-size: 14px;
         }
 
-        /* Name Entry Modal */
+        /* Name Entry Modal - Mobile */
         .name-entry-modal {
             position: fixed;
             top: 0;
@@ -51,6 +47,7 @@
             gap: 24px;
             z-index: 1000;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .name-entry-modal.hidden {
@@ -66,10 +63,9 @@
 
         .name-inputs-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            grid-template-columns: 1fr;
+            gap: 16px;
             width: 100%;
-            max-width: 100%;
             padding: 0;
         }
 
@@ -81,7 +77,7 @@
         }
 
         .name-input-sublabel {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 600;
             letter-spacing: 0.1em;
             opacity: 0.6;
@@ -89,7 +85,7 @@
         }
 
         .name-input-label {
-            font-size: 12px;
+            font-size: 16px;
             font-weight: 600;
             letter-spacing: 0.1em;
             opacity: 0.8;
@@ -97,12 +93,12 @@
 
         .name-input-field {
             width: 100%;
-            max-width: 120px;
-            padding: 8px 10px;
+            max-width: 280px;
+            padding: 12px 16px;
             background: transparent;
             color: var(--color-light);
             font-family: 'Lora', serif;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             text-align: center;
             letter-spacing: 0.05em;
@@ -127,21 +123,24 @@
             display: flex;
             gap: 12px;
             margin-top: 16px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .name-entry-start-btn,
         .name-entry-skip-btn {
-            padding: 12px 24px;
+            padding: 12px 32px;
             border: none;
             font-family: 'Lora', serif;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
             letter-spacing: 0.1em;
             cursor: pointer;
             transition: all 0.2s;
-            min-height: 44px;
+            min-height: 48px;
             border-radius: 4px;
-            touch-action: manipulation;
+            flex: 1;
+            min-width: 140px;
         }
 
         .name-entry-start-btn {
@@ -155,246 +154,396 @@
             border: 2px solid var(--color-light);
         }
 
-        /* Game Container */
+        .name-entry-start-btn:active,
+        .name-entry-skip-btn:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+
+        /* Main Game UI - Mobile */
         .game-container {
             display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            gap: 0;
         }
 
         .game-container.hidden {
             display: none;
         }
 
-        .player-section {
-            flex: 1;
+        .games-area {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: 1fr 1fr;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, #11233D 50%, #FAF1D9 50%);
+        }
+
+        .player-zone {
+            padding: 12px 12px 80px 12px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 12px;
             position: relative;
+            overflow: visible;
         }
 
-        .player-section.p1 {
-            background: rgba(90, 192, 255, 0.05);
-            border-right: 1px solid rgba(90, 192, 255, 0.2);
+        .player-zone.p1 {
+            color: #FAF1D9;
         }
 
-        .player-name {
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            opacity: 0.7;
-            margin-bottom: 8px;
-            text-align: center;
+        .player-zone.p2 {
+            color: #11233D;
         }
 
-        .game-info {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
+        .player-zone-header {
             font-size: 12px;
-        }
-
-        .info-item {
-            text-align: center;
-            opacity: 0.6;
-        }
-
-        .life-total {
-            font-size: 32px;
             font-weight: 600;
-            letter-spacing: 0.05em;
-            margin-bottom: 12px;
-            min-width: 80px;
-            text-align: center;
+            letter-spacing: 0.15em;
+            margin-bottom: 8px;
+            opacity: 0.7;
+            text-transform: uppercase;
+        }
+
+        .life-display-large {
+            font-size: 64px;
+            font-weight: 700;
+            line-height: 1;
+            margin-bottom: 8px;
+            letter-spacing: -0.05em;
         }
 
         .delta-display {
-            font-size: 14px;
-            color: var(--color-red-light);
-            margin-top: 4px;
-            min-height: 18px;
+            font-size: 28px;
+            font-weight: 700;
             text-align: center;
-        }
-
-        .button-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            width: 100%;
-            max-width: 150px;
-        }
-
-        .btn {
-            padding: 10px 8px;
-            border: none;
-            font-family: 'Lora', serif;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 4px;
-            touch-action: manipulation;
-            min-height: 40px;
+            opacity: 0;
+            pointer-events: none;
+            min-height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
+            letter-spacing: -0.05em;
+            transition: opacity 0.4s ease, transform 0.4s ease;
         }
 
-        .btn-life-adjust {
-            background: rgba(250, 241, 217, 0.1);
+        .delta-display.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .delta-display:not(.show) {
+            opacity: 0;
+            transform: scale(0.8);
+        }
+
+        .delta-display.positive {
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        .delta-display.negative {
+            color: rgba(255, 107, 157, 0.8);
+        }
+
+        .player-zone.p1 .delta-display.positive {
+            color: rgba(250, 241, 217, 0.6);
+        }
+
+        .player-zone.p1 .delta-display.negative {
+            color: rgba(250, 241, 217, 0.8);
+        }
+
+        .player-zone.p2 .delta-display.positive {
+            color: rgba(17, 35, 61, 0.6);
+        }
+
+        .player-zone.p2 .delta-display.negative {
+            color: rgba(17, 35, 61, 0.8);
+        }
+
+        .control-strip {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 0;
+        }
+
+        .control-button {
+            flex: 1;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.15);
+            border: none;
+            font-size: 40px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px;
+            border-radius: 6px;
+            margin: 4px;
+            color: currentColor;
+        }
+
+        .control-button:active {
+            background: rgba(0, 0, 0, 0.25);
+            transform: scale(0.96);
+        }
+
+        .player-zone.p1 .control-button {
+            background: rgba(250, 241, 217, 0.15);
+            color: #FAF1D9;
+        }
+
+        .player-zone.p2 .control-button {
+            background: rgba(17, 35, 61, 0.15);
+            color: #11233D;
+        }
+
+        /* Game dots display */
+        .game-dots {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            margin-top: 4px;
+            font-size: 14px;
+        }
+
+        .game-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: 0.5;
+        }
+
+        .game-dot.won {
+            opacity: 1;
+        }
+
+        .top-controls {
+            position: fixed;
+            top: 8px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 0 8px;
+            box-sizing: border-box;
+            z-index: 1001;
+            gap: 4px;
+        }
+
+        .timer-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .timer-display-center {
+            background: rgba(0, 0, 0, 0.3);
             color: var(--color-light);
-            border: 1px solid var(--color-light);
             font-size: 18px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.05em;
+            padding: 6px 16px;
+            border-radius: 4px;
+            min-width: 90px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .btn-life-adjust:active {
-            background: rgba(250, 241, 217, 0.2);
-            transform: scale(0.95);
+        .timer-display-center:active {
+            background: rgba(0, 0, 0, 0.5);
         }
 
-        .btn-next-game {
-            background: var(--color-light);
-            color: var(--color-dark);
-            grid-column: 1 / -1;
+        .timer-display-center.paused {
+            background: rgba(173, 35, 15, 0.5);
+            color: #FF7D6A;
+            font-size: 14px;
         }
 
-        .btn-next-game:active {
-            transform: scale(0.95);
-        }
-
-        .btn-end-series {
-            background: var(--color-red-dark);
+        .round-display-center {
             color: var(--color-light);
-            grid-column: 1 / -1;
             font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px 8px;
+            border-radius: 3px;
         }
 
-        .btn-end-series:active {
-            transform: scale(0.95);
+        .next-game-button {
+            background: #5AC0FF;
+            border: none;
+            color: var(--color-dark);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            padding: 8px 16px;
+            transition: all 0.2s;
+            min-height: 40px;
+            border-radius: 4px;
         }
 
-        /* Modal */
-        .modal {
+        .next-game-button:active {
+            transform: scale(0.93);
+            opacity: 0.8;
+        }
+
+        .end-game-button {
+            background: #AD230F;
+            border: none;
+            color: var(--color-light);
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            padding: 8px 16px;
+            transition: all 0.2s;
+            min-height: 40px;
+            border-radius: 4px;
+        }
+
+        .end-game-button:active {
+            transform: scale(0.93);
+            opacity: 0.8;
+        }
+
+        /* Confirmation Modal */
+        .confirmation-modal {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(17, 35, 61, 0.95);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 999;
+            gap: 24px;
+            z-index: 2000;
             padding: 20px;
         }
 
-        .modal.hidden {
+        .confirmation-modal.hidden {
             display: none;
         }
 
-        .modal-content {
-            background: var(--color-dark);
-            border: 2px solid var(--color-light);
-            padding: 20px;
-            border-radius: 4px;
-            text-align: center;
-            min-width: 200px;
-        }
-
-        .modal-title {
-            font-size: 16px;
+        .confirmation-title {
+            font-size: 20px;
             font-weight: 600;
-            margin-bottom: 16px;
+            text-align: center;
             letter-spacing: 0.05em;
+            color: var(--color-light);
         }
 
-        .modal-buttons {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-            margin-top: 16px;
+        .confirmation-options {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
-        .modal-btn {
-            padding: 12px 16px;
+        .confirm-btn, .cancel-btn {
+            padding: 12px 28px;
             border: none;
             font-family: 'Lora', serif;
-            font-size: 12px;
+            font-size: 16px;
             font-weight: 600;
+            letter-spacing: 0.1em;
             cursor: pointer;
+            transition: all 0.2s;
+            min-height: 48px;
             border-radius: 4px;
-            touch-action: manipulation;
-            min-height: 42px;
         }
 
-        .modal-btn-primary {
+        .confirm-btn {
             background: var(--color-light);
             color: var(--color-dark);
         }
 
-        .modal-btn-secondary {
+        .cancel-btn {
             background: transparent;
             color: var(--color-light);
-            border: 1px solid var(--color-light);
+            border: 2px solid var(--color-light);
         }
 
-        .modal-btn:active {
-            transform: scale(0.95);
+        .confirm-btn:active,
+        .cancel-btn:active {
+            transform: scale(0.93);
+            opacity: 0.8;
         }
 
-        /* Player Info */
-        .player-info {
-            position: absolute;
-            top: 8px;
-            left: 8px;
-            font-size: 11px;
-            opacity: 0.6;
-        }
-
-        .player-wins {
-            position: absolute;
-            top: 8px;
-            right: 8px;
+        .winner-selector {
             display: flex;
-            gap: 6px;
+            gap: 16px;
+            flex-direction: column;
+            width: 100%;
+            justify-content: center;
         }
 
-        .win-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
+        .winner-btn {
+            padding: 12px 32px;
+            border: 2px solid var(--color-light);
+            background: transparent;
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 48px;
+            border-radius: 4px;
+        }
+
+        .winner-btn:active {
+            transform: scale(0.93);
             background: var(--color-light);
-            opacity: 0.3;
-        }
-
-        .win-dot.won {
-            opacity: 1;
+            color: var(--color-dark);
         }
     </style>
 </head>
 <body>
     <!-- Name Entry Modal -->
     <div class="name-entry-modal" id="name-entry-modal">
-        <div class="name-entry-title">Player Names & Decks</div>
+        <div class="name-entry-title">Enter Player Info</div>
         <div class="name-inputs-grid">
             <div class="name-input-group">
-                <div class="name-input-sublabel">Player 1</div>
-                <div class="name-input-label">Name</div>
-                <input type="text" class="name-input-field" id="name-p1" placeholder="Name">
-                <div class="name-input-label">Deck</div>
-                <input type="text" class="name-input-field" id="deck-p1" placeholder="Deck">
+                <div class="name-input-label">Player 1</div>
+                <div class="name-input-sublabel">Name</div>
+                <input type="text" class="name-input-field" id="name-p1" inputmode="text" placeholder="Name...">
+                <div class="name-input-sublabel">Deck</div>
+                <input type="text" class="name-input-field" id="deck-p1" inputmode="text" placeholder="Deck...">
             </div>
             <div class="name-input-group">
-                <div class="name-input-sublabel">Player 2</div>
-                <div class="name-input-label">Name</div>
-                <input type="text" class="name-input-field" id="name-p2" placeholder="Name">
-                <div class="name-input-label">Deck</div>
-                <input type="text" class="name-input-field" id="deck-p2" placeholder="Deck">
+                <div class="name-input-label">Player 2</div>
+                <div class="name-input-sublabel">Name</div>
+                <input type="text" class="name-input-field" id="name-p2" inputmode="text" placeholder="Name...">
+                <div class="name-input-sublabel">Deck</div>
+                <input type="text" class="name-input-field" id="deck-p2" inputmode="text" placeholder="Deck...">
             </div>
         </div>
         <div class="name-entry-buttons">
@@ -403,61 +552,61 @@
         </div>
     </div>
 
-    <!-- Game Container -->
+    <!-- Game UI -->
     <div class="game-container hidden" id="game-container">
-        <!-- Player 1 -->
-        <div class="player-section p1">
-            <div class="player-info" id="p1-info">P1</div>
-            <div class="player-wins" id="p1-wins-display"></div>
-            
-            <div class="player-name" id="p1-name-display">Spieler 1</div>
-            <div class="life-total" id="p1-life">20</div>
-            <div class="delta-display" id="p1-delta"></div>
-            
-            <div class="button-group">
-                <button class="btn btn-life-adjust" id="p1-plus">+</button>
-                <button class="btn btn-life-adjust" id="p1-minus">−</button>
-                <button class="btn btn-next-game" id="next-game-btn">NEXT</button>
+        <div class="top-controls">
+            <button class="next-game-button" id="reset-life-btn">⏭️ NEXT</button>
+            <div class="timer-container">
+                <div class="timer-display-center" id="timer-display">00:00</div>
+                <div class="round-display-center" id="round-display">Round 1</div>
             </div>
+            <button class="end-game-button" id="end-game-btn">⏹️ END</button>
         </div>
 
-        <!-- Player 2 -->
-        <div class="player-section">
-            <div class="player-info" id="p2-info">P2</div>
-            <div class="player-wins" id="p2-wins-display"></div>
-            
-            <div class="player-name" id="p2-name-display">Spieler 2</div>
-            <div class="life-total" id="p2-life">20</div>
-            <div class="delta-display" id="p2-delta"></div>
-            
-            <div class="button-group">
-                <button class="btn btn-life-adjust" id="p2-plus">+</button>
-                <button class="btn btn-life-adjust" id="p2-minus">−</button>
-                <button class="btn btn-end-series" id="end-series-btn">END</button>
+        <!-- Players Area (vertical layout for mobile) -->
+        <div class="games-area">
+            <!-- Player 1 (Top) -->
+            <div class="player-zone p1">
+                <div class="player-zone-header" id="display-p1-name">Spieler 1</div>
+                <div class="life-display-large" id="display-p1-life">20</div>
+                <div class="game-dots" id="p1-dots"></div>
+                <div class="delta-display" id="delta-p1-display"></div>
+                <div class="control-strip">
+                    <button class="control-button" data-player="p1" data-delta="-1">−</button>
+                    <button class="control-button" data-player="p1" data-delta="+1">+</button>
+                </div>
             </div>
-        </div>
-    </div>
 
-    <!-- Next Game Modal -->
-    <div class="modal hidden" id="next-game-modal">
-        <div class="modal-content">
-            <div class="modal-title">Who won?</div>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-primary" id="p1-wins-btn">P1 WON</button>
-                <button class="modal-btn modal-btn-primary" id="p2-wins-btn">P2 WON</button>
-                <button class="modal-btn modal-btn-secondary" id="cancel-next-btn" style="grid-column: 1 / -1;">CANCEL</button>
+            <!-- Player 2 (Bottom) -->
+            <div class="player-zone p2">
+                <div class="player-zone-header" id="display-p2-name">Spieler 2</div>
+                <div class="life-display-large" id="display-p2-life">20</div>
+                <div class="game-dots" id="p2-dots"></div>
+                <div class="delta-display" id="delta-p2-display"></div>
+                <div class="control-strip">
+                    <button class="control-button" data-player="p2" data-delta="-1">−</button>
+                    <button class="control-button" data-player="p2" data-delta="+1">+</button>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- End Series Modal -->
-    <div class="modal hidden" id="end-series-modal">
-        <div class="modal-content">
-            <div class="modal-title">End series?</div>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-primary" id="confirm-end-game-btn">YES</button>
-                <button class="modal-btn modal-btn-secondary" id="cancel-end-btn">NO</button>
-            </div>
+    <!-- Next Game Confirmation Modal -->
+    <div class="confirmation-modal hidden" id="next-game-modal">
+        <div class="confirmation-title">Who won this game?</div>
+        <div class="winner-selector">
+            <button class="winner-btn" id="p1-winner-btn">Player 1</button>
+            <button class="winner-btn" id="p2-winner-btn">Player 2</button>
+        </div>
+        <button class="cancel-btn" id="cancel-next-game-btn">CANCEL</button>
+    </div>
+
+    <!-- End Game Confirmation Modal -->
+    <div class="confirmation-modal hidden" id="end-game-modal">
+        <div class="confirmation-title">End current series?</div>
+        <div class="confirmation-options">
+            <button class="confirm-btn" id="confirm-end-game-btn">CONFIRM</button>
+            <button class="cancel-btn" id="cancel-end-game-btn">CANCEL</button>
         </div>
     </div>
 
@@ -472,10 +621,82 @@
             boFormat: 3
         };
 
+        let deltaAccumulated = { p1: 0, p2: 0 };
+        let deltaTimeouts = { p1: null, p2: null };
+        let timerInterval = null;
         let timerPaused = false;
         let timerPausedOffset = 0;
 
-        // Write to Firebase
+        function updateUI() {
+            for (const player of ['p1', 'p2']) {
+                const lifeEl = document.getElementById('display-' + player + '-life');
+                lifeEl.textContent = currentState[player].life;
+                document.getElementById('display-' + player + '-name').textContent = currentState[player].name;
+            }
+            updateGameDots();
+            updateRoundDisplay();
+        }
+
+        function updateGameDots() {
+            for (const player of ['p1', 'p2']) {
+                const dotsContainer = document.getElementById(player + '-dots');
+                dotsContainer.innerHTML = '';
+                const gamesWon = currentState[player].gamesWon || 0;
+                for (let i = 0; i < 2; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'game-dot' + (i < gamesWon ? ' won' : '');
+                    dotsContainer.appendChild(dot);
+                }
+            }
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+
+        function updateTimerDisplay() {
+            if (currentState.timerStartTime !== null) {
+                let elapsed;
+                if (timerPaused) {
+                    elapsed = timerPausedOffset;
+                } else {
+                    elapsed = Math.floor((Date.now() - currentState.timerStartTime) / 1000) + timerPausedOffset;
+                }
+                document.getElementById('timer-display').textContent = formatTime(elapsed);
+            } else {
+                document.getElementById('timer-display').textContent = '00:00';
+            }
+        }
+
+        function updateRoundDisplay() {
+            document.getElementById('round-display').textContent = 'Round ' + currentState.currentRound;
+        }
+
+        function toggleTimer() {
+            const timerEl = document.getElementById('timer-display');
+            if (timerPaused) {
+                timerPaused = false;
+                timerEl.classList.remove('paused');
+                currentState.timerStartTime = Date.now() - (timerPausedOffset * 1000);
+                updateTimerDisplay();
+            } else {
+                timerPaused = true;
+                timerEl.classList.add('paused');
+                timerPausedOffset = Math.floor((Date.now() - currentState.timerStartTime) / 1000);
+                timerEl.textContent = 'PAUSE';
+            }
+        }
+
+        function startTimer() {
+            currentState.timerStartTime = Date.now();
+            timerPaused = false;
+            timerPausedOffset = 0;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimerDisplay, 100);
+        }
+
         async function writeToFirebase(patch) {
             try {
                 const response = await fetch(DB_URL, {
@@ -489,22 +710,6 @@
             }
         }
 
-        // Load best-of format from Firebase
-        async function loadBoFormat() {
-            try {
-                const response = await fetch(DB_URL + '?t=' + Date.now());
-                if (!response.ok) throw new Error('Failed to load');
-                
-                const data = await response.json();
-                if (data && data.boFormat) {
-                    currentState.boFormat = data.boFormat;
-                }
-            } catch (error) {
-                console.error('Error loading boFormat:', error);
-            }
-        }
-
-        // Handle name entry
         document.getElementById('start-game-btn').addEventListener('click', async () => {
             const p1Name = document.getElementById('name-p1').value.trim() || 'Spieler 1';
             const p1Deck = document.getElementById('deck-p1').value.trim() || 'Deck';
@@ -522,21 +727,20 @@
             timerPausedOffset = 0;
 
             await loadBoFormat();
-
             document.getElementById('name-entry-modal').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
-
             updateUI();
+            startTimer();
 
             writeToFirebase({
                 'p1': currentState.p1,
                 'p2': currentState.p2,
                 'currentRound': currentState.currentRound,
+                'timerStartTime': currentState.timerStartTime,
                 'boFormat': currentState.boFormat
             });
         });
 
-        // Handle skip button
         document.getElementById('skip-game-btn').addEventListener('click', async () => {
             currentState.p1.name = 'Spieler 1';
             currentState.p1.deck = 'Deck';
@@ -549,122 +753,119 @@
             timerPausedOffset = 0;
 
             await loadBoFormat();
-
             document.getElementById('name-entry-modal').classList.add('hidden');
             document.getElementById('game-container').classList.remove('hidden');
-
             updateUI();
+            startTimer();
 
             writeToFirebase({
                 'p1': currentState.p1,
                 'p2': currentState.p2,
                 'currentRound': currentState.currentRound,
+                'timerStartTime': currentState.timerStartTime,
                 'boFormat': currentState.boFormat
             });
         });
 
-        // Update UI
-        function updateUI() {
-            document.getElementById('p1-name-display').textContent = currentState.p1.name;
-            document.getElementById('p2-name-display').textContent = currentState.p2.name;
-            document.getElementById('p1-life').textContent = currentState.p1.life;
-            document.getElementById('p2-life').textContent = currentState.p2.life;
-
-            // Update wins dots
-            updateWinsDots('p1');
-            updateWinsDots('p2');
-        }
-
-        function updateWinsDots(player) {
-            const container = document.getElementById(`${player}-wins-display`);
-            container.innerHTML = '';
-            const gamesWon = currentState[player].gamesWon || 0;
-            for (let i = 0; i < 2; i++) {
-                const dot = document.createElement('div');
-                dot.className = 'win-dot' + (i < gamesWon ? ' won' : '');
-                container.appendChild(dot);
+        async function loadBoFormat() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load');
+                const data = await response.json();
+                if (data && data.boFormat) {
+                    currentState.boFormat = data.boFormat;
+                }
+            } catch (error) {
+                console.error('Error loading boFormat:', error);
             }
         }
 
-        // Life total controls
-        document.getElementById('p1-plus').addEventListener('click', () => {
-            currentState.p1.life = Math.min(999, (currentState.p1.life || 0) + 1);
-            updateUI();
-            writeToFirebase({ 'p1': currentState.p1 });
+        document.querySelectorAll('.control-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const player = btn.getAttribute('data-player');
+                const delta = parseInt(btn.getAttribute('data-delta'));
+                currentState[player].life += delta;
+                updateUI();
+                updateDeltaDisplay(player, delta);
+
+                writeToFirebase({
+                    'p1': currentState.p1,
+                    'p2': currentState.p2,
+                    'currentRound': currentState.currentRound,
+                    'timerStartTime': currentState.timerStartTime
+                });
+            });
         });
 
-        document.getElementById('p1-minus').addEventListener('click', () => {
-            currentState.p1.life = Math.max(0, (currentState.p1.life || 0) - 1);
-            updateUI();
-            writeToFirebase({ 'p1': currentState.p1 });
-        });
+        function updateDeltaDisplay(player, delta) {
+            const deltaEl = document.getElementById('delta-' + player + '-display');
+            deltaEl.textContent = (delta > 0 ? '+' : '') + delta;
+            deltaEl.className = 'delta-display ' + (delta > 0 ? 'positive' : 'negative') + ' show';
 
-        document.getElementById('p2-plus').addEventListener('click', () => {
-            currentState.p2.life = Math.min(999, (currentState.p2.life || 0) + 1);
-            updateUI();
-            writeToFirebase({ 'p2': currentState.p2 });
-        });
+            if (deltaTimeouts[player]) clearTimeout(deltaTimeouts[player]);
+            deltaTimeouts[player] = setTimeout(() => {
+                deltaEl.classList.remove('show');
+            }, 1200);
+        }
 
-        document.getElementById('p2-minus').addEventListener('click', () => {
-            currentState.p2.life = Math.max(0, (currentState.p2.life || 0) - 1);
-            updateUI();
-            writeToFirebase({ 'p2': currentState.p2 });
-        });
+        document.getElementById('timer-display').addEventListener('click', toggleTimer);
 
-        // Next game
-        document.getElementById('next-game-btn').addEventListener('click', () => {
+        document.getElementById('reset-life-btn').addEventListener('click', () => {
             document.getElementById('next-game-modal').classList.remove('hidden');
         });
 
-        document.getElementById('p1-wins-btn').addEventListener('click', () => {
-            currentState.p1.gamesWon = (currentState.p1.gamesWon || 0) + 1;
-            currentState.p1.life = 20;
+        document.getElementById('p1-winner-btn').addEventListener('click', () => {
+            currentState.p1.gamesWon++;
             currentState.p2.life = 20;
-            currentState.currentRound += 1;
+            currentState.p1.life = 20;
+            currentState.currentRound++;
             updateUI();
+            startTimer();
             document.getElementById('next-game-modal').classList.add('hidden');
 
             writeToFirebase({
                 'p1': currentState.p1,
                 'p2': currentState.p2,
-                'currentRound': currentState.currentRound
+                'currentRound': currentState.currentRound,
+                'timerStartTime': currentState.timerStartTime
             });
 
             checkSeriesEnd();
         });
 
-        document.getElementById('p2-wins-btn').addEventListener('click', () => {
-            currentState.p2.gamesWon = (currentState.p2.gamesWon || 0) + 1;
-            currentState.p1.life = 20;
+        document.getElementById('p2-winner-btn').addEventListener('click', () => {
+            currentState.p2.gamesWon++;
             currentState.p2.life = 20;
-            currentState.currentRound += 1;
+            currentState.p1.life = 20;
+            currentState.currentRound++;
             updateUI();
+            startTimer();
             document.getElementById('next-game-modal').classList.add('hidden');
 
             writeToFirebase({
                 'p1': currentState.p1,
                 'p2': currentState.p2,
-                'currentRound': currentState.currentRound
+                'currentRound': currentState.currentRound,
+                'timerStartTime': currentState.timerStartTime
             });
 
             checkSeriesEnd();
         });
 
-        document.getElementById('cancel-next-btn').addEventListener('click', () => {
+        document.getElementById('cancel-next-game-btn').addEventListener('click', () => {
             document.getElementById('next-game-modal').classList.add('hidden');
         });
 
-        // End series
-        document.getElementById('end-series-btn').addEventListener('click', () => {
-            document.getElementById('end-series-modal').classList.remove('hidden');
+        document.getElementById('end-game-btn').addEventListener('click', () => {
+            document.getElementById('end-game-modal').classList.remove('hidden');
         });
 
-        document.getElementById('confirm-end-game-btn').addEventListener('click', () => {
+        document.getElementById('confirm-end-game-btn').addEventListener('click', async () => {
             endSeries();
         });
 
-        document.getElementById('cancel-end-btn').addEventListener('click', () => {
-            document.getElementById('end-series-modal').classList.add('hidden');
+        document.getElementById('cancel-end-game-btn').addEventListener('click', () => {
+            document.getElementById('end-game-modal').classList.add('hidden');
         });
 
         function checkSeriesEnd() {
@@ -675,36 +876,42 @@
         }
 
         function endSeries() {
-            document.getElementById('end-series-modal').classList.add('hidden');
-            document.getElementById('game-container').classList.add('hidden');
-            document.getElementById('name-entry-modal').classList.remove('hidden');
-            
-            document.getElementById('name-p1').value = '';
-            document.getElementById('deck-p1').value = '';
-            document.getElementById('name-p2').value = '';
-            document.getElementById('deck-p2').value = '';
-
             currentState.p1.gamesWon = 0;
             currentState.p2.gamesWon = 0;
+            currentState.p1.life = 20;
+            currentState.p2.life = 20;
             currentState.currentRound = 1;
+            if (timerInterval) clearInterval(timerInterval);
+            currentState.timerStartTime = null;
+            timerPaused = false;
+            timerPausedOffset = 0;
+
+            document.getElementById('name-p1').value = '';
+            document.getElementById('name-p2').value = '';
+            document.getElementById('deck-p1').value = '';
+            document.getElementById('deck-p2').value = '';
+
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('name-entry-modal').classList.remove('hidden');
+            document.getElementById('end-game-modal').classList.add('hidden');
+            updateUI();
 
             writeToFirebase({
                 'p1': currentState.p1,
                 'p2': currentState.p2,
-                'currentRound': currentState.currentRound
+                'currentRound': currentState.currentRound,
+                'timerStartTime': null
             });
         }
 
-        // Allow Enter to start game
-        ['name-p1', 'deck-p1', 'name-p2', 'deck-p2'].forEach(id => {
-            document.getElementById(id).addEventListener('keypress', (e) => {
+        document.querySelectorAll('.name-input-field').forEach(input => {
+            input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     document.getElementById('start-game-btn').click();
                 }
             });
         });
 
-        // Initial UI update
         updateUI();
     </script>
 </body>

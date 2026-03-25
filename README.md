@@ -30,19 +30,16 @@ Live life point tracking for Magic: The Gathering Pauper tournaments. Synced via
 
 ## Quick Start
 
-### On Tournament Touchscreen (Landscape):
+### On Tournament Touchscreen:
 https://dennha.github.io/SpezlCounter/controller.html
-
-### On Mobile Device (iPhone, Android):
-https://dennha.github.io/SpezlCounter/controller-mobile.html
 
 **Flow:**
 1. Enter player names and deck names (or click SKIP for defaults)
 2. Select Best of 3 or 5 format in admin panel
 3. Use + / − buttons to adjust life totals
-4. Click NEXT → select winner → life resets to 20, dot added
+4. Click NEXT GAME → select winner → life resets to 20, dot added
 5. Repeat until series ends (first to 2 or 3 wins)
-6. Click END → confirm → returns to name entry
+6. Click END SERIES → confirm → returns to name entry
 
 ### Admin Panel (Remote Management):
 https://dennha.github.io/SpezlCounter/admin.html
