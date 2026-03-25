@@ -221,9 +221,9 @@
                 
                 const data = await response.json();
                 
-                if (data && data.match && data.match.p2) {
-                    updateName(data.match.p2.name);
-                    updateLife(data.match.p2.life);
+                if (data && data.p2) {
+                    updateName(data.p2.name);
+                    updateLife(data.p2.life);
                     setConnectionStatus(true);
                 }
             } catch (error) {
