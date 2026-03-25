@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>MTG Pauper Controller - Mobile</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-dark:         #11233D;
+            --color-light:        #FAF1D9;
+            --color-red-light:    #FF7D6A;
+            --color-red-dark:     #AD230F;
+            --color-yellow-dark:  #C88F00;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: var(--color-dark);
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            overflow: hidden;
+            font-size: 14px;
+        }
+
+        /* Name Entry Modal */
+        .name-entry-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--color-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .name-entry-modal.hidden {
+            display: none;
+        }
+
+        .name-entry-title {
+            font-size: 24px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        .name-inputs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 100%;
+            padding: 0;
+        }
+
+        .name-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .name-input-sublabel {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.6;
+            text-transform: uppercase;
+        }
+
+        .name-input-label {
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+        }
+
+        .name-input-field {
+            width: 100%;
+            max-width: 120px;
+            padding: 8px 10px;
+            background: transparent;
+            color: var(--color-light);
+            font-family: 'Lora', serif;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: center;
+            letter-spacing: 0.05em;
+            outline: none;
+            transition: opacity 0.3s;
+            border: none;
+            border-bottom: 2px solid var(--color-light);
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .name-input-field:focus {
+            opacity: 1;
+        }
+
+        .name-input-field::placeholder {
+            color: var(--color-light);
+            opacity: 0.4;
+        }
+
+        .name-entry-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .name-entry-start-btn,
+        .name-entry-skip-btn {
+            padding: 12px 24px;
+            border: none;
+            font-family: 'Lora', serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 44px;
+            border-radius: 4px;
+            touch-action: manipulation;
+        }
+
+        .name-entry-start-btn {
+            background: var(--color-light);
+            color: var(--color-dark);
+        }
+
+        .name-entry-skip-btn {
+            background: transparent;
+            color: var(--color-light);
+            border: 2px solid var(--color-light);
+        }
+
+        /* Game Container */
+        .game-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        .game-container.hidden {
+            display: none;
+        }
+
+        .player-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 12px;
+            position: relative;
+        }
+
+        .player-section.p1 {
+            background: rgba(90, 192, 255, 0.05);
+            border-right: 1px solid rgba(90, 192, 255, 0.2);
+        }
+
+        .player-name {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.7;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .game-info {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 12px;
+            font-size: 12px;
+        }
+
+        .info-item {
+            text-align: center;
+            opacity: 0.6;
+        }
+
+        .life-total {
+            font-size: 32px;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin-bottom: 12px;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .delta-display {
+            font-size: 14px;
+            color: var(--color-red-light);
+            margin-top: 4px;
+            min-height: 18px;
+            text-align: center;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            width: 100%;
+            max-width: 150px;
+        }
+
+        .btn {
+            padding: 10px 8px;
+            border: none;
+            font-family: 'Lora', serif;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 4px;
+            touch-action: manipulation;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-life-adjust {
+            background: rgba(250, 241, 217, 0.1);
+            color: var(--color-light);
+            border: 1px solid var(--color-light);
+            font-size: 18px;
+        }
+
+        .btn-life-adjust:active {
+            background: rgba(250, 241, 217, 0.2);
+            transform: scale(0.95);
+        }
+
+        .btn-next-game {
+            background: var(--color-light);
+            color: var(--color-dark);
+            grid-column: 1 / -1;
+        }
+
+        .btn-next-game:active {
+            transform: scale(0.95);
+        }
+
+        .btn-end-series {
+            background: var(--color-red-dark);
+            color: var(--color-light);
+            grid-column: 1 / -1;
+            font-size: 11px;
+        }
+
+        .btn-end-series:active {
+            transform: scale(0.95);
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 20px;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: var(--color-dark);
+            border: 2px solid var(--color-light);
+            padding: 20px;
+            border-radius: 4px;
+            text-align: center;
+            min-width: 200px;
+        }
+
+        .modal-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            letter-spacing: 0.05em;
+        }
+
+        .modal-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .modal-btn {
+            padding: 12px 16px;
+            border: none;
+            font-family: 'Lora', serif;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 4px;
+            touch-action: manipulation;
+            min-height: 42px;
+        }
+
+        .modal-btn-primary {
+            background: var(--color-light);
+            color: var(--color-dark);
+        }
+
+        .modal-btn-secondary {
+            background: transparent;
+            color: var(--color-light);
+            border: 1px solid var(--color-light);
+        }
+
+        .modal-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Player Info */
+        .player-info {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 11px;
+            opacity: 0.6;
+        }
+
+        .player-wins {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .win-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--color-light);
+            opacity: 0.3;
+        }
+
+        .win-dot.won {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- Name Entry Modal -->
+    <div class="name-entry-modal" id="name-entry-modal">
+        <div class="name-entry-title">Player Names & Decks</div>
+        <div class="name-inputs-grid">
+            <div class="name-input-group">
+                <div class="name-input-sublabel">Player 1</div>
+                <div class="name-input-label">Name</div>
+                <input type="text" class="name-input-field" id="name-p1" placeholder="Name">
+                <div class="name-input-label">Deck</div>
+                <input type="text" class="name-input-field" id="deck-p1" placeholder="Deck">
+            </div>
+            <div class="name-input-group">
+                <div class="name-input-sublabel">Player 2</div>
+                <div class="name-input-label">Name</div>
+                <input type="text" class="name-input-field" id="name-p2" placeholder="Name">
+                <div class="name-input-label">Deck</div>
+                <input type="text" class="name-input-field" id="deck-p2" placeholder="Deck">
+            </div>
+        </div>
+        <div class="name-entry-buttons">
+            <button class="name-entry-start-btn" id="start-game-btn">START</button>
+            <button class="name-entry-skip-btn" id="skip-game-btn">SKIP</button>
+        </div>
+    </div>
+
+    <!-- Game Container -->
+    <div class="game-container hidden" id="game-container">
+        <!-- Player 1 -->
+        <div class="player-section p1">
+            <div class="player-info" id="p1-info">P1</div>
+            <div class="player-wins" id="p1-wins-display"></div>
+            
+            <div class="player-name" id="p1-name-display">Spieler 1</div>
+            <div class="life-total" id="p1-life">20</div>
+            <div class="delta-display" id="p1-delta"></div>
+            
+            <div class="button-group">
+                <button class="btn btn-life-adjust" id="p1-plus">+</button>
+                <button class="btn btn-life-adjust" id="p1-minus">−</button>
+                <button class="btn btn-next-game" id="next-game-btn">NEXT</button>
+            </div>
+        </div>
+
+        <!-- Player 2 -->
+        <div class="player-section">
+            <div class="player-info" id="p2-info">P2</div>
+            <div class="player-wins" id="p2-wins-display"></div>
+            
+            <div class="player-name" id="p2-name-display">Spieler 2</div>
+            <div class="life-total" id="p2-life">20</div>
+            <div class="delta-display" id="p2-delta"></div>
+            
+            <div class="button-group">
+                <button class="btn btn-life-adjust" id="p2-plus">+</button>
+                <button class="btn btn-life-adjust" id="p2-minus">−</button>
+                <button class="btn btn-end-series" id="end-series-btn">END</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Next Game Modal -->
+    <div class="modal hidden" id="next-game-modal">
+        <div class="modal-content">
+            <div class="modal-title">Who won?</div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-primary" id="p1-wins-btn">P1 WON</button>
+                <button class="modal-btn modal-btn-primary" id="p2-wins-btn">P2 WON</button>
+                <button class="modal-btn modal-btn-secondary" id="cancel-next-btn" style="grid-column: 1 / -1;">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- End Series Modal -->
+    <div class="modal hidden" id="end-series-modal">
+        <div class="modal-content">
+            <div class="modal-title">End series?</div>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-primary" id="confirm-end-game-btn">YES</button>
+                <button class="modal-btn modal-btn-secondary" id="cancel-end-btn">NO</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
+
+        let currentState = {
+            p1: { name: 'Spieler 1', deck: 'Deck', life: 20, gamesWon: 0 },
+            p2: { name: 'Spieler 2', deck: 'Deck', life: 20, gamesWon: 0 },
+            currentRound: 1,
+            timerStartTime: null,
+            boFormat: 3
+        };
+
+        let timerPaused = false;
+        let timerPausedOffset = 0;
+
+        // Write to Firebase
+        async function writeToFirebase(patch) {
+            try {
+                const response = await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(patch)
+                });
+                if (!response.ok) throw new Error('Firebase write failed');
+            } catch (error) {
+                console.error('Firebase write error:', error);
+            }
+        }
+
+        // Load best-of format from Firebase
+        async function loadBoFormat() {
+            try {
+                const response = await fetch(DB_URL + '?t=' + Date.now());
+                if (!response.ok) throw new Error('Failed to load');
+                
+                const data = await response.json();
+                if (data && data.boFormat) {
+                    currentState.boFormat = data.boFormat;
+                }
+            } catch (error) {
+                console.error('Error loading boFormat:', error);
+            }
+        }
+
+        // Handle name entry
+        document.getElementById('start-game-btn').addEventListener('click', async () => {
+            const p1Name = document.getElementById('name-p1').value.trim() || 'Spieler 1';
+            const p1Deck = document.getElementById('deck-p1').value.trim() || 'Deck';
+            const p2Name = document.getElementById('name-p2').value.trim() || 'Spieler 2';
+            const p2Deck = document.getElementById('deck-p2').value.trim() || 'Deck';
+
+            currentState.p1.name = p1Name;
+            currentState.p1.deck = p1Deck;
+            currentState.p2.name = p2Name;
+            currentState.p2.deck = p2Deck;
+            currentState.p1.gamesWon = 0;
+            currentState.p2.gamesWon = 0;
+            currentState.currentRound = 1;
+            timerPaused = false;
+            timerPausedOffset = 0;
+
+            await loadBoFormat();
+
+            document.getElementById('name-entry-modal').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+
+            updateUI();
+
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound,
+                'boFormat': currentState.boFormat
+            });
+        });
+
+        // Handle skip button
+        document.getElementById('skip-game-btn').addEventListener('click', async () => {
+            currentState.p1.name = 'Spieler 1';
+            currentState.p1.deck = 'Deck';
+            currentState.p2.name = 'Spieler 2';
+            currentState.p2.deck = 'Deck';
+            currentState.p1.gamesWon = 0;
+            currentState.p2.gamesWon = 0;
+            currentState.currentRound = 1;
+            timerPaused = false;
+            timerPausedOffset = 0;
+
+            await loadBoFormat();
+
+            document.getElementById('name-entry-modal').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('hidden');
+
+            updateUI();
+
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound,
+                'boFormat': currentState.boFormat
+            });
+        });
+
+        // Update UI
+        function updateUI() {
+            document.getElementById('p1-name-display').textContent = currentState.p1.name;
+            document.getElementById('p2-name-display').textContent = currentState.p2.name;
+            document.getElementById('p1-life').textContent = currentState.p1.life;
+            document.getElementById('p2-life').textContent = currentState.p2.life;
+
+            // Update wins dots
+            updateWinsDots('p1');
+            updateWinsDots('p2');
+        }
+
+        function updateWinsDots(player) {
+            const container = document.getElementById(`${player}-wins-display`);
+            container.innerHTML = '';
+            const gamesWon = currentState[player].gamesWon || 0;
+            for (let i = 0; i < 2; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'win-dot' + (i < gamesWon ? ' won' : '');
+                container.appendChild(dot);
+            }
+        }
+
+        // Life total controls
+        document.getElementById('p1-plus').addEventListener('click', () => {
+            currentState.p1.life = Math.min(999, (currentState.p1.life || 0) + 1);
+            updateUI();
+            writeToFirebase({ 'p1': currentState.p1 });
+        });
+
+        document.getElementById('p1-minus').addEventListener('click', () => {
+            currentState.p1.life = Math.max(0, (currentState.p1.life || 0) - 1);
+            updateUI();
+            writeToFirebase({ 'p1': currentState.p1 });
+        });
+
+        document.getElementById('p2-plus').addEventListener('click', () => {
+            currentState.p2.life = Math.min(999, (currentState.p2.life || 0) + 1);
+            updateUI();
+            writeToFirebase({ 'p2': currentState.p2 });
+        });
+
+        document.getElementById('p2-minus').addEventListener('click', () => {
+            currentState.p2.life = Math.max(0, (currentState.p2.life || 0) - 1);
+            updateUI();
+            writeToFirebase({ 'p2': currentState.p2 });
+        });
+
+        // Next game
+        document.getElementById('next-game-btn').addEventListener('click', () => {
+            document.getElementById('next-game-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('p1-wins-btn').addEventListener('click', () => {
+            currentState.p1.gamesWon = (currentState.p1.gamesWon || 0) + 1;
+            currentState.p1.life = 20;
+            currentState.p2.life = 20;
+            currentState.currentRound += 1;
+            updateUI();
+            document.getElementById('next-game-modal').classList.add('hidden');
+
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound
+            });
+
+            checkSeriesEnd();
+        });
+
+        document.getElementById('p2-wins-btn').addEventListener('click', () => {
+            currentState.p2.gamesWon = (currentState.p2.gamesWon || 0) + 1;
+            currentState.p1.life = 20;
+            currentState.p2.life = 20;
+            currentState.currentRound += 1;
+            updateUI();
+            document.getElementById('next-game-modal').classList.add('hidden');
+
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound
+            });
+
+            checkSeriesEnd();
+        });
+
+        document.getElementById('cancel-next-btn').addEventListener('click', () => {
+            document.getElementById('next-game-modal').classList.add('hidden');
+        });
+
+        // End series
+        document.getElementById('end-series-btn').addEventListener('click', () => {
+            document.getElementById('end-series-modal').classList.remove('hidden');
+        });
+
+        document.getElementById('confirm-end-game-btn').addEventListener('click', () => {
+            endSeries();
+        });
+
+        document.getElementById('cancel-end-btn').addEventListener('click', () => {
+            document.getElementById('end-series-modal').classList.add('hidden');
+        });
+
+        function checkSeriesEnd() {
+            const winsNeeded = Math.ceil(currentState.boFormat / 2);
+            if (currentState.p1.gamesWon >= winsNeeded || currentState.p2.gamesWon >= winsNeeded) {
+                endSeries();
+            }
+        }
+
+        function endSeries() {
+            document.getElementById('end-series-modal').classList.add('hidden');
+            document.getElementById('game-container').classList.add('hidden');
+            document.getElementById('name-entry-modal').classList.remove('hidden');
+            
+            document.getElementById('name-p1').value = '';
+            document.getElementById('deck-p1').value = '';
+            document.getElementById('name-p2').value = '';
+            document.getElementById('deck-p2').value = '';
+
+            currentState.p1.gamesWon = 0;
+            currentState.p2.gamesWon = 0;
+            currentState.currentRound = 1;
+
+            writeToFirebase({
+                'p1': currentState.p1,
+                'p2': currentState.p2,
+                'currentRound': currentState.currentRound
+            });
+        }
+
+        // Allow Enter to start game
+        ['name-p1', 'deck-p1', 'name-p2', 'deck-p2'].forEach(id => {
+            document.getElementById(id).addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    document.getElementById('start-game-btn').click();
+                }
+            });
+        });
+
+        // Initial UI update
+        updateUI();
+    </script>
+</body>
+</html>
