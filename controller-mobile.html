@@ -283,21 +283,32 @@
         }
 
         .control-strip-center {
-            position: absolute;
-            right: 0;
-            top: 50%;
-            
+            position: fixed;
+            right: 8px;
+            top: calc(50% - 30px);
+            width: auto;
             height: auto;
             display: flex;
             flex-direction: row;
             align-items: center;
-            justify-content: space-evenly;
+            justify-content: center;
+            padding: 0;
+            background: transparent;
+            transform: none;
+            z-index: 100;
+        }
+
+        .control-strip-content {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
             gap: 12px;
             padding: 16px;
             background: rgba(0, 0, 0, 0.2);
-            transform: translateY(-100%) rotate(90deg);
-            transform-origin: center;
-            z-index: 100;
+            transform: rotate(90deg);
+            transform-origin: left center;
+        }
         }
 
         .control-strip-rotated {
@@ -324,6 +335,8 @@
             border-radius: 6px;
             margin: 2px;
             color: currentColor;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
 
         .control-button:active {
@@ -393,6 +406,8 @@
             transition: all 0.2s;
             white-space: nowrap;
             flex-shrink: 0;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
 
         .timer-display-center:active {
@@ -431,6 +446,8 @@
             border-radius: 4px;
             flex-shrink: 0;
             white-space: nowrap;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
 
         .next-game-button:active {
@@ -452,6 +469,8 @@
             border-radius: 4px;
             flex-shrink: 0;
             white-space: nowrap;
+            touch-action: manipulation;
+            -webkit-touch-callout: none;
         }
 
         .end-game-button:active {
@@ -554,6 +573,16 @@
             background: var(--color-light);
             color: var(--color-dark);
         }
+
+        #deck-p1,
+        #deck-p2 {
+            display: none !important;
+        }
+        
+        /* Hide the deck sublabel by hiding the second sublabel in each group */
+        .name-input-group .name-input-sublabel:nth-of-type(2) {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -621,10 +650,12 @@
 
             <!-- Controls Column (Right) -->
             <div class="control-strip-center">
-                <button class="next-game-button" id="reset-life-btn-center">⏭️</button>
-                <div class="timer-display-center" id="timer-display-center">00:00</div>
-                <div class="round-display-center" id="round-display-center">Round 1</div>
-                <button class="end-game-button" id="end-game-btn-center">⏹️</button>
+                <div class="control-strip-content">
+                    <button class="next-game-button" id="reset-life-btn-center">⏭️</button>
+                    <div class="timer-display-center" id="timer-display-center">00:00</div>
+                    <div class="round-display-center" id="round-display-center">Round 1</div>
+                    <button class="end-game-button" id="end-game-btn-center">⏹️</button>
+                </div>
             </div>
         </div>
     </div>
