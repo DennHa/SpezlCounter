@@ -618,6 +618,16 @@
             background: var(--color-light);
             color: var(--color-dark);
         }
+
+        #deck-p1,
+        #deck-p2 {
+            display: none !important;
+        }
+        
+        /* Hide the deck sublabel by hiding the second sublabel in each group */
+        .name-input-group .name-input-sublabel:nth-of-type(2) {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -716,8 +726,8 @@
         const DB_URL = 'https://spezlcounter-default-rtdb.europe-west1.firebasedatabase.app/match.json';
 
         let currentState = {
-            p1: { name: 'Spieler 1', deck: 'Deck', life: 20, gamesWon: 0 },
-            p2: { name: 'Spieler 2', deck: 'Deck', life: 20, gamesWon: 0 },
+            p1: { name: 'Spieler 1', deck: '', life: 20, gamesWon: 0 },
+            p2: { name: 'Spieler 2', deck: '', life: 20, gamesWon: 0 },
             currentRound: 1,
             timerStartTime: null,
             boFormat: 3
@@ -877,14 +887,12 @@
         // Handle name entry
         document.getElementById('start-game-btn').addEventListener('click', async () => {
             const p1Name = document.getElementById('name-p1').value.trim() || 'Spieler 1';
-            const p1Deck = document.getElementById('deck-p1').value.trim() || 'Deck';
             const p2Name = document.getElementById('name-p2').value.trim() || 'Spieler 2';
-            const p2Deck = document.getElementById('deck-p2').value.trim() || 'Deck';
 
             currentState.p1.name = p1Name;
-            currentState.p1.deck = p1Deck;
+            currentState.p1.deck = '';
             currentState.p2.name = p2Name;
-            currentState.p2.deck = p2Deck;
+            currentState.p2.deck = '';
             currentState.p1.gamesWon = 0;
             currentState.p2.gamesWon = 0;
             currentState.currentRound = 1;
@@ -916,9 +924,9 @@
         // Handle skip button (start with default names)
         document.getElementById('skip-game-btn').addEventListener('click', async () => {
             currentState.p1.name = 'Spieler 1';
-            currentState.p1.deck = 'Deck';
+            currentState.p1.deck = '';
             currentState.p2.name = 'Spieler 2';
-            currentState.p2.deck = 'Deck';
+            currentState.p2.deck = '';
             currentState.p1.gamesWon = 0;
             currentState.p2.gamesWon = 0;
             currentState.currentRound = 1;
