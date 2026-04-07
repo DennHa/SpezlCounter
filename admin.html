@@ -308,6 +308,99 @@
             outline: none;
             background: rgba(250, 241, 217, 0.15);
         }
+
+        .timer-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(250, 241, 217, 0.05);
+            border: 1px solid var(--color-blue);
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .timer-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+            margin-bottom: 12px;
+        }
+
+        .timer-display-admin {
+            font-size: 36px;
+            font-weight: 600;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 0.05em;
+            margin-bottom: 16px;
+        }
+
+        .timer-display-admin.paused {
+            color: var(--color-red);
+        }
+
+        .timer-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .timer-buttons .btn {
+            padding: 8px 20px;
+            font-size: 14px;
+        }
+
+        .round-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(250, 241, 217, 0.05);
+            border: 1px solid var(--color-blue);
+            border-radius: 4px;
+        }
+
+        .round-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            opacity: 0.8;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .round-control {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .round-value {
+            font-size: 24px;
+            font-weight: 600;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .life-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(250, 241, 217, 0.05);
+            border-radius: 4px;
+        }
+
+        .life-control {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .life-value {
+            width: 40px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -349,6 +442,27 @@
                 <button class="btn btn-secondary" id="refresh-btn" style="padding: 12px 40px;">REFRESH NAMES & DECKS</button>
             </div>
 
+            <!-- Timer Section -->
+            <div class="timer-section">
+                <div class="timer-section-title">TIMER</div>
+                <div class="timer-display-admin" id="admin-timer-display">00:00</div>
+                <div class="timer-buttons">
+                    <button class="btn btn-primary" id="timer-start-btn">START</button>
+                    <button class="btn btn-secondary" id="timer-pause-btn">PAUSE</button>
+                    <button class="btn btn-danger" id="timer-reset-btn">RESET</button>
+                </div>
+            </div>
+
+            <!-- Round Section -->
+            <div class="round-section">
+                <div class="round-section-title">ROUND</div>
+                <div class="round-control">
+                    <button class="game-wins-btn" id="round-minus">−</button>
+                    <div class="round-value" id="admin-round-display">1</div>
+                    <button class="game-wins-btn" id="round-plus">+</button>
+                </div>
+            </div>
+
             <div class="admin-grid">
                 <!-- Player 1 -->
                 <div class="player-box">
@@ -359,6 +473,14 @@
                     <div class="stat-row">
                         <div class="stat-label">Deck</div>
                         <input type="text" class="deck-edit-field" id="p1-deck-input" placeholder="Deck...">
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Life</div>
+                        <div class="life-control">
+                            <button class="game-wins-btn" id="p1-life-minus">−</button>
+                            <div class="life-value" id="p1-life">20</div>
+                            <button class="game-wins-btn" id="p1-life-plus">+</button>
+                        </div>
                     </div>
                     <div class="stat-row">
                         <div class="stat-label">Games Won</div>
@@ -379,6 +501,14 @@
                     <div class="stat-row">
                         <div class="stat-label">Deck</div>
                         <input type="text" class="deck-edit-field" id="p2-deck-input" placeholder="Deck...">
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">Life</div>
+                        <div class="life-control">
+                            <button class="game-wins-btn" id="p2-life-minus">−</button>
+                            <div class="life-value" id="p2-life">20</div>
+                            <button class="game-wins-btn" id="p2-life-plus">+</button>
+                        </div>
                     </div>
                     <div class="stat-row">
                         <div class="stat-label">Games Won</div>
@@ -406,6 +536,11 @@
         let currentGameState = null;
         let currentBoFormat = 3;
         let currentCardImageUrl = '';
+        let currentRound = 1;
+        let timerStartTime = null;
+        let timerPaused = false;
+        let timerPausedOffset = 0;
+        let timerInterval = null;
 
         // Login form handler
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -437,7 +572,10 @@
 
                 currentBoFormat = data.boFormat || 3;
                 currentCardImageUrl = data.cardImageUrl || '';
+                currentRound = data.currentRound || 1;
+                timerStartTime = data.timerStartTime || null;
                 updateAdminUI();
+                updateTimerDisplay();
             } catch (error) {
                 console.error('Load error:', error);
                 document.getElementById('firebase-error').textContent = 'Failed to load game state';
@@ -453,11 +591,41 @@
             document.getElementById('p1-deck-input').value = currentGameState.p1.deck || 'Deck';
             document.getElementById('p2-deck-input').value = currentGameState.p2.deck || 'Deck';
             document.getElementById('card-image-input').value = currentCardImageUrl || '';
+            document.getElementById('p1-life').textContent = currentGameState.p1.life || 20;
+            document.getElementById('p2-life').textContent = currentGameState.p2.life || 20;
+            document.getElementById('admin-round-display').textContent = currentRound;
 
             // Update format buttons
             document.getElementById('bo3-btn').classList.toggle('active', currentBoFormat === 3);
             document.getElementById('bo5-btn').classList.toggle('active', currentBoFormat === 5);
         }
+
+        // Timer display
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        }
+
+        function updateTimerDisplay() {
+            const el = document.getElementById('admin-timer-display');
+            if (timerStartTime !== null) {
+                if (timerPaused) {
+                    el.textContent = formatTime(timerPausedOffset);
+                    el.classList.add('paused');
+                } else {
+                    const elapsed = Math.floor((Date.now() - timerStartTime) / 1000) + timerPausedOffset;
+                    el.textContent = formatTime(elapsed);
+                    el.classList.remove('paused');
+                }
+            } else {
+                el.textContent = '00:00';
+                el.classList.remove('paused');
+            }
+        }
+
+        // Tick timer display every second
+        setInterval(updateTimerDisplay, 1000);
 
         // Refresh only name and deck fields from Firebase
         document.getElementById('refresh-btn').addEventListener('click', async () => {
@@ -540,7 +708,8 @@
                         'p1': currentGameState.p1,
                         'p2': currentGameState.p2,
                         'boFormat': currentBoFormat,
-                        'cardImageUrl': currentCardImageUrl
+                        'cardImageUrl': currentCardImageUrl,
+                        'currentRound': currentRound
                     })
                 });
                 if (!response.ok) throw new Error('Failed to save');
@@ -563,6 +732,10 @@
             currentGameState.p2.life = 20;
             currentGameState.p1.deck = 'Deck';
             currentGameState.p2.deck = 'Deck';
+            currentRound = 1;
+            timerStartTime = null;
+            timerPaused = false;
+            timerPausedOffset = 0;
 
             try {
                 const response = await fetch(DB_URL, {
@@ -572,7 +745,8 @@
                         'p1': currentGameState.p1,
                         'p2': currentGameState.p2,
                         'boFormat': currentBoFormat,
-                        'currentRound': 1
+                        'currentRound': 1,
+                        'timerStartTime': null
                     })
                 });
                 if (!response.ok) throw new Error('Failed to reset');
@@ -584,6 +758,98 @@
             } catch (error) {
                 document.getElementById('firebase-error').textContent = 'Failed to reset series';
             }
+        });
+
+        // Timer controls
+        document.getElementById('timer-start-btn').addEventListener('click', async () => {
+            if (timerPaused) {
+                // Resume from pause
+                timerPaused = false;
+                timerStartTime = Date.now() - (timerPausedOffset * 1000);
+                timerPausedOffset = 0;
+            } else if (timerStartTime === null) {
+                // Fresh start
+                timerStartTime = Date.now();
+                timerPausedOffset = 0;
+            }
+            updateTimerDisplay();
+            try {
+                await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timerStartTime: timerStartTime })
+                });
+                document.getElementById('save-success').textContent = 'Timer started';
+                setTimeout(() => { document.getElementById('save-success').textContent = ''; }, 2000);
+            } catch (e) {
+                document.getElementById('firebase-error').textContent = 'Failed to start timer';
+            }
+        });
+
+        document.getElementById('timer-pause-btn').addEventListener('click', async () => {
+            if (timerStartTime === null || timerPaused) return;
+            timerPaused = true;
+            timerPausedOffset = Math.floor((Date.now() - timerStartTime) / 1000);
+            updateTimerDisplay();
+            // Write paused time as a frozen timestamp so overlay shows frozen value
+            try {
+                await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timerStartTime: Date.now() - (timerPausedOffset * 1000) })
+                });
+                document.getElementById('save-success').textContent = 'Timer paused';
+                setTimeout(() => { document.getElementById('save-success').textContent = ''; }, 2000);
+            } catch (e) {
+                document.getElementById('firebase-error').textContent = 'Failed to pause timer';
+            }
+        });
+
+        document.getElementById('timer-reset-btn').addEventListener('click', async () => {
+            timerStartTime = null;
+            timerPaused = false;
+            timerPausedOffset = 0;
+            updateTimerDisplay();
+            try {
+                await fetch(DB_URL, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ timerStartTime: null })
+                });
+                document.getElementById('save-success').textContent = 'Timer reset';
+                setTimeout(() => { document.getElementById('save-success').textContent = ''; }, 2000);
+            } catch (e) {
+                document.getElementById('firebase-error').textContent = 'Failed to reset timer';
+            }
+        });
+
+        // Round controls
+        document.getElementById('round-plus').addEventListener('click', () => {
+            currentRound = Math.min(99, currentRound + 1);
+            document.getElementById('admin-round-display').textContent = currentRound;
+        });
+
+        document.getElementById('round-minus').addEventListener('click', () => {
+            currentRound = Math.max(1, currentRound - 1);
+            document.getElementById('admin-round-display').textContent = currentRound;
+        });
+
+        // Life controls
+        document.getElementById('p1-life-plus').addEventListener('click', () => {
+            currentGameState.p1.life = (currentGameState.p1.life || 20) + 1;
+            document.getElementById('p1-life').textContent = currentGameState.p1.life;
+        });
+        document.getElementById('p1-life-minus').addEventListener('click', () => {
+            currentGameState.p1.life = (currentGameState.p1.life || 20) - 1;
+            document.getElementById('p1-life').textContent = currentGameState.p1.life;
+        });
+        document.getElementById('p2-life-plus').addEventListener('click', () => {
+            currentGameState.p2.life = (currentGameState.p2.life || 20) + 1;
+            document.getElementById('p2-life').textContent = currentGameState.p2.life;
+        });
+        document.getElementById('p2-life-minus').addEventListener('click', () => {
+            currentGameState.p2.life = (currentGameState.p2.life || 20) - 1;
+            document.getElementById('p2-life').textContent = currentGameState.p2.life;
         });
 
         // Logout
